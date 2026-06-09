@@ -9,12 +9,13 @@ const cors = require('cors');
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// ─── PASTAS ─────────────────────────────────────────────────────────────────
-const DATA_DIR = path.join(__dirname, 'data');
+// ─── PASTAS ───────────────────────────────────────────────────────────────────
+const DATA_DIR    = path.join(__dirname, 'data');
 const UPLOADS_DIR = path.join(__dirname, 'uploads');
-[DATA_DIR, UPLOADS_DIR].forEach(d => !fs.existsSync(d) && fs.mkdirSync(d, { recursive: true }));
+const BACKUP_DIR  = path.join(DATA_DIR, 'backups');
+[DATA_DIR, UPLOADS_DIR, BACKUP_DIR].forEach(d => !fs.existsSync(d) && fs.mkdirSync(d, { recursive: true }));
 
-// ─── BANCO ───────────────────────────────────────────────────────────────────
+// ─── BANCO ────────────────────────────────────────────────────────────────────
 const db = new Database(path.join(DATA_DIR, 'shoecrm.db'));
 db.pragma('journal_mode = WAL');
 db.pragma('foreign_keys = ON');
@@ -32,7 +33,6 @@ db.exec(`
     ativo       INTEGER NOT NULL DEFAULT 1,
     criado_em   TEXT    NOT NULL DEFAULT (datetime('now','localtime'))
   );
-
   CREATE TABLE IF NOT EXISTS estoque (
     id            INTEGER PRIMARY KEY AUTOINCREMENT,
     produto_id    INTEGER NOT NULL REFERENCES produtos(id) ON DELETE CASCADE,
@@ -42,7 +42,6 @@ db.exec(`
     atualizado_em TEXT    NOT NULL DEFAULT (datetime('now','localtime')),
     UNIQUE(produto_id, tamanho, cor)
   );
-
   CREATE TABLE IF NOT EXISTS vendas (
     id            INTEGER PRIMARY KEY AUTOINCREMENT,
     cliente_nome  TEXT    NOT NULL,
@@ -60,7 +59,6 @@ db.exec(`
     observacoes   TEXT,
     criado_em     TEXT    NOT NULL DEFAULT (datetime('now','localtime'))
   );
-
   CREATE TABLE IF NOT EXISTS envios (
     id             INTEGER PRIMARY KEY AUTOINCREMENT,
     venda_id       INTEGER NOT NULL UNIQUE REFERENCES vendas(id) ON DELETE CASCADE,
@@ -72,11 +70,34 @@ db.exec(`
   );
 `);
 
+// ─── PROTEÇÃO DO ADMIN ────────────────────────────────────────────────────────
+// Senha definida pela variável de ambiente ADMIN_PASS no Railway
+// Se não configurar, a senha padrão é "admin123" — troque antes de usar!
+const ADMIN_PASS = process.env.ADMIN_PASS || 'admin123';
+
+app.use('/admin.html', (req, res, next) => {
+  const auth = req.headers.authorization;
+  if (!auth || !auth.startsWith('Basic ')) {
+    res.setHeader('WWW-Authenticate', 'Basic realm="ShoeCRM Admin"');
+    return res.status(401).send('🔒 Acesso restrito. Informe a senha de administrador.');
+  }
+  const decoded = Buffer.from(auth.split(' ')[1], 'base64').toString();
+  const pass = decoded.split(':').slice(1).join(':'); // pega tudo após o primeiro ':'
+  if (pass !== ADMIN_PASS) {
+    res.setHeader('WWW-Authenticate', 'Basic realm="ShoeCRM Admin"');
+    return res.status(401).send('❌ Senha incorreta.');
+  }
+  next();
+});
+
 // ─── MIDDLEWARE ───────────────────────────────────────────────────────────────
 app.use(cors());
 app.use(express.json());
 app.use('/uploads', express.static(UPLOADS_DIR));
 app.use(express.static(path.join(__dirname, 'public')));
+
+// Redireciona raiz para a loja
+app.get('/', (req, res) => res.redirect('/loja.html'));
 
 // ─── UPLOAD DE IMAGENS ────────────────────────────────────────────────────────
 const storage = multer.diskStorage({
@@ -137,7 +158,6 @@ app.put('/api/produtos/:id', (req, res) => {
 });
 
 app.delete('/api/produtos/:id', (req, res) => {
-  // Remove imagens físicas
   const p = db.prepare('SELECT imagens FROM produtos WHERE id=?').get(req.params.id);
   if (p) {
     (JSON.parse(p.imagens||'[]')).forEach(img => {
@@ -149,7 +169,6 @@ app.delete('/api/produtos/:id', (req, res) => {
   res.json({ ok: true });
 });
 
-// ─── IMAGENS ─────────────────────────────────────────────────────────────────
 app.post('/api/produtos/:id/imagens', upload.array('imagens', 8), (req, res) => {
   const p = db.prepare('SELECT imagens FROM produtos WHERE id=?').get(req.params.id);
   if (!p) return res.status(404).json({ error: 'Produto não encontrado' });
@@ -164,22 +183,22 @@ app.delete('/api/produtos/:id/imagens', (req, res) => {
   const { url } = req.body;
   const p = db.prepare('SELECT imagens FROM produtos WHERE id=?').get(req.params.id);
   if (!p) return res.status(404).json({ error: 'Não encontrado' });
-  const lista = JSON.parse(p.imagens||'[]').filter(i => i !== url);
   const fp = path.join(UPLOADS_DIR, path.basename(url));
   if (fs.existsSync(fp)) fs.unlinkSync(fp);
-  db.prepare('UPDATE produtos SET imagens=? WHERE id=?').run(JSON.stringify(lista), req.params.id);
-  res.json({ imagens: lista });
+  const novas = JSON.parse(p.imagens||'[]').filter(i => i !== url);
+  db.prepare('UPDATE produtos SET imagens=? WHERE id=?').run(JSON.stringify(novas), req.params.id);
+  res.json({ imagens: novas });
 });
 
 // ════════════════════════════════════════════════════════════════════════════
 //  ESTOQUE
 // ════════════════════════════════════════════════════════════════════════════
 app.get('/api/estoque', (req, res) => {
-  const { produto_id } = req.query;
-  let sql = `SELECT e.*, p.nome as produto_nome FROM estoque e
-             LEFT JOIN produtos p ON e.produto_id=p.id WHERE 1=1`;
+  const { produto_id, q } = req.query;
+  let sql = `SELECT e.*, p.nome as produto_nome FROM estoque e LEFT JOIN produtos p ON e.produto_id=p.id WHERE 1=1`;
   const params = [];
   if (produto_id) { sql += ' AND e.produto_id=?'; params.push(produto_id); }
+  if (q) { sql += ' AND p.nome LIKE ?'; params.push(`%${q}%`); }
   sql += ' ORDER BY p.nome, e.tamanho, e.cor';
   res.json(db.prepare(sql).all(...params));
 });
@@ -200,7 +219,6 @@ app.post('/api/estoque', (req, res) => {
   res.json(db.prepare('SELECT * FROM estoque WHERE produto_id=? AND tamanho=? AND cor=?').get(produto_id, tamanho, cor));
 });
 
-// Estoque por produto (para loja)
 app.get('/api/estoque/produto/:id', (req, res) => {
   res.json(db.prepare('SELECT tamanho, cor, quantidade FROM estoque WHERE produto_id=? AND quantidade>0').all(req.params.id));
 });
@@ -273,19 +291,71 @@ app.put('/api/envios/:venda_id', (req, res) => {
 // ════════════════════════════════════════════════════════════════════════════
 app.get('/api/dashboard', (req, res) => {
   res.json({
-    total_produtos:  db.prepare('SELECT COUNT(*) as c FROM produtos WHERE ativo=1').get().c,
-    total_vendas:    db.prepare('SELECT COUNT(*) as c FROM vendas').get().c,
-    faturamento:     db.prepare("SELECT COALESCE(SUM(total),0) as t FROM vendas WHERE status='pago'").get().t,
-    envios_pendentes:db.prepare("SELECT COUNT(*) as c FROM envios WHERE status NOT IN ('entregue')").get().c,
-    vendas_recentes: db.prepare(`SELECT v.*, e.status as env_status FROM vendas v
-                                 LEFT JOIN envios e ON v.id=e.venda_id
-                                 ORDER BY v.id DESC LIMIT 8`).all()
+    total_produtos:   db.prepare('SELECT COUNT(*) as c FROM produtos WHERE ativo=1').get().c,
+    total_vendas:     db.prepare('SELECT COUNT(*) as c FROM vendas').get().c,
+    faturamento:      db.prepare("SELECT COALESCE(SUM(total),0) as t FROM vendas WHERE status='pago'").get().t,
+    envios_pendentes: db.prepare("SELECT COUNT(*) as c FROM envios WHERE status NOT IN ('entregue')").get().c,
+    vendas_recentes:  db.prepare(`SELECT v.*, e.status as env_status FROM vendas v
+                                  LEFT JOIN envios e ON v.id=e.venda_id
+                                  ORDER BY v.id DESC LIMIT 8`).all()
   });
 });
 
 // ════════════════════════════════════════════════════════════════════════════
 //  BACKUP / EXPORT
 // ════════════════════════════════════════════════════════════════════════════
+
+// Função interna que gera o Excel e salva em disco
+function gerarBackupXlsx(nomeArquivo) {
+  const wb = XLSX.utils.book_new();
+  const tables = {
+    'Produtos': 'SELECT p.*, (SELECT COALESCE(SUM(e.quantidade),0) FROM estoque e WHERE e.produto_id=p.id) as estoque_total FROM produtos p',
+    'Estoque':  'SELECT e.*, p.nome as produto_nome FROM estoque e LEFT JOIN produtos p ON e.produto_id=p.id',
+    'Vendas':   'SELECT * FROM vendas',
+    'Envios':   'SELECT en.*, v.cliente_nome, v.produto_nome FROM envios en LEFT JOIN vendas v ON en.venda_id=v.id'
+  };
+  Object.entries(tables).forEach(([name, sql]) => {
+    const rows = db.prepare(sql).all();
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(rows), name);
+  });
+  const filePath = path.join(BACKUP_DIR, nomeArquivo);
+  XLSX.writeFile(wb, filePath);
+  return filePath;
+}
+
+// Limpa backups antigos — mantém apenas os 4 mais recentes
+function limparBackupsAntigos() {
+  const arquivos = fs.readdirSync(BACKUP_DIR)
+    .filter(f => f.endsWith('.xlsx'))
+    .map(f => ({ name: f, time: fs.statSync(path.join(BACKUP_DIR, f)).mtime.getTime() }))
+    .sort((a, b) => b.time - a.time);
+  arquivos.slice(4).forEach(f => {
+    fs.unlinkSync(path.join(BACKUP_DIR, f.name));
+    console.log(`🗑️  Backup antigo removido: ${f.name}`);
+  });
+}
+
+// Download manual do Excel
+app.get('/api/backup/xlsx', (req, res) => {
+  const buf = (() => {
+    const wb = XLSX.utils.book_new();
+    const tables = {
+      'Produtos': 'SELECT p.*, (SELECT COALESCE(SUM(e.quantidade),0) FROM estoque e WHERE e.produto_id=p.id) as estoque_total FROM produtos p',
+      'Estoque':  'SELECT e.*, p.nome as produto_nome FROM estoque e LEFT JOIN produtos p ON e.produto_id=p.id',
+      'Vendas':   'SELECT * FROM vendas',
+      'Envios':   'SELECT en.*, v.cliente_nome, v.produto_nome FROM envios en LEFT JOIN vendas v ON en.venda_id=v.id'
+    };
+    Object.entries(tables).forEach(([name, sql]) => {
+      XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(db.prepare(sql).all()), name);
+    });
+    return XLSX.write(wb, { type: 'buffer', bookType: 'xlsx' });
+  })();
+  res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+  res.setHeader('Content-Disposition', 'attachment; filename="shoecrm_export.xlsx"');
+  res.send(buf);
+});
+
+// Download do banco completo
 app.get('/api/backup/db', (req, res) => {
   const dest = path.join(DATA_DIR, `backup_${Date.now()}.db`);
   db.backup(dest).then(() => {
@@ -293,6 +363,7 @@ app.get('/api/backup/db', (req, res) => {
   });
 });
 
+// Download SQL
 app.get('/api/backup/sql', (req, res) => {
   const tables = ['produtos','estoque','vendas','envios'];
   let sql = `-- ShoeCRM Backup SQL\n-- ${new Date().toLocaleString('pt-BR')}\n\n`;
@@ -310,29 +381,70 @@ app.get('/api/backup/sql', (req, res) => {
   res.send(sql);
 });
 
-app.get('/api/backup/xlsx', (req, res) => {
-  const wb = XLSX.utils.book_new();
-  const tables = {
-    'Produtos': 'SELECT p.*, (SELECT COALESCE(SUM(e.quantidade),0) FROM estoque e WHERE e.produto_id=p.id) as estoque_total FROM produtos p',
-    'Estoque':  'SELECT e.*, p.nome as produto_nome FROM estoque e LEFT JOIN produtos p ON e.produto_id=p.id',
-    'Vendas':   'SELECT * FROM vendas',
-    'Envios':   'SELECT en.*, v.cliente_nome, v.produto_nome FROM envios en LEFT JOIN vendas v ON en.venda_id=v.id'
-  };
-  Object.entries(tables).forEach(([name, sql]) => {
-    const rows = db.prepare(sql).all();
-    const ws = XLSX.utils.json_to_sheet(rows);
-    XLSX.utils.book_append_sheet(wb, ws, name);
-  });
-  const buf = XLSX.write(wb, { type: 'buffer', bookType: 'xlsx' });
-  res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
-  res.setHeader('Content-Disposition', 'attachment; filename="shoecrm_export.xlsx"');
-  res.send(buf);
+// Lista backups automáticos salvos no servidor
+app.get('/api/backup/lista', (req, res) => {
+  const arquivos = fs.readdirSync(BACKUP_DIR)
+    .filter(f => f.endsWith('.xlsx'))
+    .map(f => {
+      const stat = fs.statSync(path.join(BACKUP_DIR, f));
+      return { nome: f, tamanho: stat.size, data: stat.mtime };
+    })
+    .sort((a, b) => new Date(b.data) - new Date(a.data));
+  res.json(arquivos);
 });
 
-// ─── SEED (dados de exemplo na 1ª execução) ──────────────────────────────────
+// Download de um backup salvo pelo nome
+app.get('/api/backup/arquivo/:nome', (req, res) => {
+  const filePath = path.join(BACKUP_DIR, path.basename(req.params.nome));
+  if (!fs.existsSync(filePath)) return res.status(404).json({ error: 'Arquivo não encontrado' });
+  res.download(filePath);
+});
+
+// ════════════════════════════════════════════════════════════════════════════
+//  BACKUP AUTOMÁTICO SEMANAL (toda domingo às 02:00)
+// ════════════════════════════════════════════════════════════════════════════
+function agendarBackupSemanal() {
+  const INTERVALO_MS = 7 * 24 * 60 * 60 * 1000; // 7 dias em ms
+
+  function executarBackup() {
+    try {
+      const data = new Date().toISOString().slice(0,10);
+      const nome = `backup_${data}.xlsx`;
+      gerarBackupXlsx(nome);
+      limparBackupsAntigos();
+      console.log(`✅ Backup automático criado: ${nome}`);
+    } catch(e) {
+      console.error('❌ Erro no backup automático:', e.message);
+    }
+  }
+
+  // Calcula quantos ms faltam para o próximo domingo às 02:00
+  function msParaProximoDomingo() {
+    const agora = new Date();
+    const proximo = new Date(agora);
+    proximo.setHours(2, 0, 0, 0);
+    // Avança até o próximo domingo (dia 0)
+    const diasParaDomingo = (7 - agora.getDay()) % 7 || 7;
+    proximo.setDate(agora.getDate() + diasParaDomingo);
+    return proximo.getTime() - agora.getTime();
+  }
+
+  // Agenda o primeiro backup e depois repete a cada 7 dias
+  setTimeout(() => {
+    executarBackup();
+    setInterval(executarBackup, INTERVALO_MS);
+  }, msParaProximoDomingo());
+
+  const diasRestantes = Math.round(msParaProximoDomingo() / (1000 * 60 * 60 * 24));
+  console.log(`📅 Backup automático agendado — próximo em ${diasRestantes} dia(s)`);
+}
+
+agendarBackupSemanal();
+
+// ─── SEED (dados de exemplo na 1ª execução) ───────────────────────────────────
 const seedCheck = db.prepare("SELECT COUNT(*) as c FROM produtos").get();
 if (seedCheck.c === 0) {
-  const ins = db.prepare('INSERT INTO produtos (nome,modelo,descricao,preco,tamanhos,cores,ativo) VALUES (?,?,?,?,?,?,?)');
+  const ins    = db.prepare('INSERT INTO produtos (nome,modelo,descricao,preco,tamanhos,cores,ativo) VALUES (?,?,?,?,?,?,?)');
   const insEst = db.prepare('INSERT OR IGNORE INTO estoque (produto_id,tamanho,cor,quantidade) VALUES (?,?,?,?)');
   db.transaction(() => {
     const p1 = ins.run('Scarpin Elegance','SCA-001','Scarpin clássico com salto fino 7cm',159.90,'["35","36","37","38","39","40"]','["Preto","Nude","Vermelho"]',1);
