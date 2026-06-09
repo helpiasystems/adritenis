@@ -276,13 +276,44 @@ app.get('/api/envios', (req, res) => {
 
 app.put('/api/envios/:venda_id', (req, res) => {
   const { status, rastreio, transportadora, observacao } = req.body;
+  const venda_id = req.params.venda_id;
+
+  // Lê status ANTERIOR antes de atualizar (para detectar transição → 'entregue')
+  const anterior = db.prepare('SELECT status FROM envios WHERE venda_id=?').get(venda_id);
+  const statusAnterior = anterior ? anterior.status : null;
+
   db.prepare(`INSERT INTO envios (venda_id,status,rastreio,transportadora,observacao)
               VALUES (?,?,?,?,?)
               ON CONFLICT(venda_id) DO UPDATE SET
               status=excluded.status, rastreio=excluded.rastreio,
               transportadora=excluded.transportadora, observacao=excluded.observacao,
               atualizado_em=datetime('now','localtime')`)
-    .run(req.params.venda_id, status, rastreio||null, transportadora||null, observacao||null);
+    .run(venda_id, status, rastreio||null, transportadora||null, observacao||null);
+
+  // ── DESCONTO AUTOMÁTICO DE ESTOQUE ─────────────────────────────────────────
+  // Só desconta quando o status MUDA para 'entregue' pela primeira vez,
+  // evitando duplo desconto se o usuário salvar novamente sem alterar o status.
+  if (status === 'entregue' && statusAnterior !== 'entregue') {
+    const venda = db.prepare(
+      'SELECT produto_id, tamanho, cor, quantidade FROM vendas WHERE id=?'
+    ).get(venda_id);
+
+    if (venda && venda.produto_id && venda.tamanho && venda.cor) {
+      const item = db.prepare(
+        'SELECT id, quantidade FROM estoque WHERE produto_id=? AND tamanho=? AND cor=?'
+      ).get(venda.produto_id, venda.tamanho, venda.cor);
+
+      if (item) {
+        const novaQtd = Math.max(0, item.quantidade - (venda.quantidade || 1));
+        db.prepare(
+          "UPDATE estoque SET quantidade=?, atualizado_em=datetime('now','localtime') WHERE id=?"
+        ).run(novaQtd, item.id);
+        console.log(`📦 Estoque descontado: produto_id=${venda.produto_id} tam=${venda.tamanho} cor=${venda.cor} | ${item.quantidade} → ${novaQtd}`);
+      }
+    }
+  }
+  // ───────────────────────────────────────────────────────────────────────────
+
   res.json({ ok: true });
 });
 

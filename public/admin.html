@@ -128,6 +128,13 @@ textarea{resize:vertical;min-height:70px}
 .bk-card h3{font-size:14px;font-weight:700;margin-bottom:8px}
 .bk-card p{font-size:13px;color:var(--cinza-d);margin-bottom:12px}
 .bk-btns{display:flex;gap:10px;flex-wrap:wrap}
+
+/* ORDENAÇÃO */
+th.sortable{cursor:pointer;user-select:none;white-space:nowrap}
+th.sortable:hover{color:var(--rosa-d)}
+th.sortable::after{content:' ⇅';opacity:.35;font-size:10px}
+th.sort-asc::after{content:' ▲';opacity:1;color:var(--rosa)}
+th.sort-desc::after{content:' ▼';opacity:1;color:var(--rosa)}
 </style>
 </head>
 <body>
@@ -195,7 +202,16 @@ textarea{resize:vertical;min-height:70px}
       <button class="btn btn-p" onclick="abrirProd()">＋ Novo produto</button>
     </div>
     <div class="tcard">
-      <table><thead><tr><th>ID</th><th>Produto</th><th>Modelo</th><th>Imagens</th><th>Tamanhos</th><th>Preço</th><th>Status</th><th></th></tr></thead>
+      <table><thead><tr>
+        <th class="sortable" onclick="sortTable('prods','id',this)">ID</th>
+        <th class="sortable" onclick="sortTable('prods','nome',this)">Produto</th>
+        <th class="sortable" onclick="sortTable('prods','modelo',this)">Modelo</th>
+        <th>Imagens</th>
+        <th>Tamanhos</th>
+        <th class="sortable" onclick="sortTable('prods','preco',this)">Preço</th>
+        <th class="sortable" onclick="sortTable('prods','ativo',this)">Status</th>
+        <th></th>
+      </tr></thead>
       <tbody id="tb-prods"></tbody></table>
     </div>
   </section>
@@ -208,7 +224,14 @@ textarea{resize:vertical;min-height:70px}
       <button class="btn btn-p" onclick="abrirEstoque()">＋ Ajustar estoque</button>
     </div>
     <div class="tcard">
-      <table><thead><tr><th>Produto</th><th>Tamanho</th><th>Cor</th><th>Qtd</th><th>Status</th><th></th></tr></thead>
+      <table><thead><tr>
+        <th class="sortable" onclick="sortTable('est','produto_nome',this)">Produto</th>
+        <th class="sortable" onclick="sortTable('est','tamanho',this)">Tamanho</th>
+        <th class="sortable" onclick="sortTable('est','cor',this)">Cor</th>
+        <th class="sortable" onclick="sortTable('est','quantidade',this)">Qtd</th>
+        <th>Status</th>
+        <th></th>
+      </tr></thead>
       <tbody id="tb-est"></tbody></table>
     </div>
   </section>
@@ -225,7 +248,18 @@ textarea{resize:vertical;min-height:70px}
       <button class="btn btn-p" onclick="abrirVenda()">＋ Registrar venda</button>
     </div>
     <div class="tcard">
-      <table><thead><tr><th>ID</th><th>Cliente</th><th>Produto</th><th>Tam</th><th>Cor</th><th>Total</th><th>Pgto</th><th>Status</th><th>Data</th><th></th></tr></thead>
+      <table><thead><tr>
+        <th class="sortable" onclick="sortTable('vend','id',this)">ID</th>
+        <th class="sortable" onclick="sortTable('vend','cliente_nome',this)">Cliente</th>
+        <th class="sortable" onclick="sortTable('vend','produto_nome',this)">Produto</th>
+        <th class="sortable" onclick="sortTable('vend','tamanho',this)">Tam</th>
+        <th class="sortable" onclick="sortTable('vend','cor',this)">Cor</th>
+        <th class="sortable" onclick="sortTable('vend','total',this)">Total</th>
+        <th class="sortable" onclick="sortTable('vend','pagamento',this)">Pgto</th>
+        <th class="sortable" onclick="sortTable('vend','status',this)">Status</th>
+        <th class="sortable" onclick="sortTable('vend','criado_em',this)">Data</th>
+        <th></th>
+      </tr></thead>
       <tbody id="tb-vend"></tbody></table>
     </div>
   </section>
@@ -241,7 +275,14 @@ textarea{resize:vertical;min-height:70px}
       </select>
     </div>
     <div class="tcard">
-      <table><thead><tr><th>Pedido</th><th>Cliente</th><th>Produto</th><th>Rastreio</th><th>Progresso</th><th></th></tr></thead>
+      <table><thead><tr>
+        <th class="sortable" onclick="sortTable('env','venda_id',this)">Pedido</th>
+        <th class="sortable" onclick="sortTable('env','cliente_nome',this)">Cliente</th>
+        <th class="sortable" onclick="sortTable('env','produto_nome',this)">Produto</th>
+        <th class="sortable" onclick="sortTable('env','rastreio',this)">Rastreio</th>
+        <th class="sortable" onclick="sortTable('env','status',this)">Progresso</th>
+        <th></th>
+      </tr></thead>
       <tbody id="tb-env"></tbody></table>
     </div>
   </section>
@@ -516,12 +557,52 @@ async function loadDash() {
   } catch(e) { setStatus(false,'Erro API'); }
 }
 
+// ── ENGINE DE ORDENAÇÃO ───────────────────────────────────────────────────────
+// cache dos dados brutos por tabela
+const _cache = { prods:[], est:[], vend:[], env:[] };
+// estado de sort por tabela: { col, dir }
+const _sort  = { prods:{col:'id',dir:'asc'}, est:{col:'produto_nome',dir:'asc'},
+                 vend:{col:'id',dir:'desc'}, env:{col:'venda_id',dir:'desc'} };
+
+function sortTable(tbl, col, th) {
+  const s = _sort[tbl];
+  if (s.col === col) s.dir = s.dir === 'asc' ? 'desc' : 'asc';
+  else { s.col = col; s.dir = 'asc'; }
+  // limpa classes do thead desta tabela
+  th.closest('thead').querySelectorAll('th').forEach(t => t.classList.remove('sort-asc','sort-desc'));
+  th.classList.add(s.dir === 'asc' ? 'sort-asc' : 'sort-desc');
+  renderTable(tbl);
+}
+
+function applySort(tbl, rows) {
+  const { col, dir } = _sort[tbl];
+  return [...rows].sort((a, b) => {
+    let va = a[col] ?? ''; let vb = b[col] ?? '';
+    const n = !isNaN(Number(va)) && !isNaN(Number(vb));
+    const cmp = n ? Number(va) - Number(vb) : String(va).localeCompare(String(vb), 'pt-BR', {numeric:true});
+    return dir === 'asc' ? cmp : -cmp;
+  });
+}
+
+function renderTable(tbl) {
+  const rows = applySort(tbl, _cache[tbl]);
+  if (tbl === 'prods') renderProdutos(rows);
+  if (tbl === 'est')   renderEstoque(rows);
+  if (tbl === 'vend')  renderVendas(rows);
+  if (tbl === 'env')   renderEnvios(rows);
+}
+
 // ── PRODUTOS ─────────────────────────────────────────────────────────────────
 async function loadProdutos() {
   const q = document.getElementById('s-prod').value;
   const prods = await api('/api/produtos'+(q?`?q=${encodeURIComponent(q)}`:''));
   todosProds = await api('/api/produtos');
   preencherSelects();
+  _cache.prods = prods;
+  renderTable('prods');
+}
+
+function renderProdutos(prods) {
   const tb = document.getElementById('tb-prods');
   tb.innerHTML = prods.map(p => {
     const tams = JSON.parse(p.tamanhos||'[]');
@@ -640,6 +721,11 @@ async function delImg(url, prodId) {
 async function loadEstoque() {
   const pid = document.getElementById('s-est-prod').value;
   const rows = await api('/api/estoque'+(pid?`?produto_id=${pid}`:''));
+  _cache.est = rows;
+  renderTable('est');
+}
+
+function renderEstoque(rows) {
   const tb = document.getElementById('tb-est');
   tb.innerHTML = rows.map(r => {
     const cls = r.quantidade<=0 ? 'br' : r.quantidade<=3 ? 'ba' : 'bv';
@@ -681,6 +767,11 @@ async function loadVendas() {
   let qs = new URLSearchParams();
   if (q) qs.set('q',q); if (st) qs.set('status',st);
   const rows = await api('/api/vendas'+(qs.toString()?'?'+qs:''));
+  _cache.vend = rows;
+  renderTable('vend');
+}
+
+function renderVendas(rows) {
   const stMap = {pendente:'ba',pago:'bv',cancelado:'br'};
   document.getElementById('tb-vend').innerHTML = rows.map(v=>`<tr>
     <td><code style="font-size:11px;background:var(--cinza);padding:2px 5px;border-radius:4px">#${v.id}</code></td>
