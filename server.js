@@ -1,0 +1,363 @@
+// Proteção simples para /admin.html
+const ADMIN_PASS = process.env.ADMIN_PASS || 'senha123';
+app.use('/admin.html', (req, res, next) => {
+  const auth = req.headers.authorization;
+  if (!auth) {
+    res.setHeader('WWW-Authenticate', 'Basic realm="Admin"');
+    return res.status(401).send('Autenticação necessária');
+  }
+  const [,b64] = auth.split(' ');
+  const [,pass] = Buffer.from(b64,'base64').toString().split(':');
+  if (pass !== ADMIN_PASS) {
+    res.setHeader('WWW-Authenticate', 'Basic realm="Admin"');
+    return res.status(401).send('Senha incorreta');
+  }
+  next();
+});
+const express = require('express');
+const Database = require('better-sqlite3');
+const multer = require('multer');
+const path = require('path');
+const fs = require('fs');
+const XLSX = require('xlsx');
+const cors = require('cors');
+
+const app = express();
+const PORT = process.env.PORT || 3000;
+
+// ─── PASTAS ─────────────────────────────────────────────────────────────────
+const DATA_DIR = path.join(__dirname, 'data');
+const UPLOADS_DIR = path.join(__dirname, 'uploads');
+[DATA_DIR, UPLOADS_DIR].forEach(d => !fs.existsSync(d) && fs.mkdirSync(d, { recursive: true }));
+
+// ─── BANCO ───────────────────────────────────────────────────────────────────
+const db = new Database(path.join(DATA_DIR, 'shoecrm.db'));
+db.pragma('journal_mode = WAL');
+db.pragma('foreign_keys = ON');
+
+db.exec(`
+  CREATE TABLE IF NOT EXISTS produtos (
+    id          INTEGER PRIMARY KEY AUTOINCREMENT,
+    nome        TEXT    NOT NULL,
+    modelo      TEXT    NOT NULL UNIQUE,
+    descricao   TEXT,
+    preco       REAL    NOT NULL,
+    tamanhos    TEXT    NOT NULL DEFAULT '[]',
+    cores       TEXT    NOT NULL DEFAULT '[]',
+    imagens     TEXT    NOT NULL DEFAULT '[]',
+    ativo       INTEGER NOT NULL DEFAULT 1,
+    criado_em   TEXT    NOT NULL DEFAULT (datetime('now','localtime'))
+  );
+
+  CREATE TABLE IF NOT EXISTS estoque (
+    id            INTEGER PRIMARY KEY AUTOINCREMENT,
+    produto_id    INTEGER NOT NULL REFERENCES produtos(id) ON DELETE CASCADE,
+    tamanho       TEXT    NOT NULL,
+    cor           TEXT    NOT NULL,
+    quantidade    INTEGER NOT NULL DEFAULT 0,
+    atualizado_em TEXT    NOT NULL DEFAULT (datetime('now','localtime')),
+    UNIQUE(produto_id, tamanho, cor)
+  );
+
+  CREATE TABLE IF NOT EXISTS vendas (
+    id            INTEGER PRIMARY KEY AUTOINCREMENT,
+    cliente_nome  TEXT    NOT NULL,
+    cliente_tel   TEXT    NOT NULL,
+    cliente_end   TEXT,
+    produto_id    INTEGER REFERENCES produtos(id),
+    produto_nome  TEXT,
+    tamanho       TEXT,
+    cor           TEXT,
+    quantidade    INTEGER NOT NULL DEFAULT 1,
+    preco_unit    REAL,
+    total         REAL,
+    pagamento     TEXT,
+    status        TEXT    NOT NULL DEFAULT 'pendente',
+    observacoes   TEXT,
+    criado_em     TEXT    NOT NULL DEFAULT (datetime('now','localtime'))
+  );
+
+  CREATE TABLE IF NOT EXISTS envios (
+    id             INTEGER PRIMARY KEY AUTOINCREMENT,
+    venda_id       INTEGER NOT NULL UNIQUE REFERENCES vendas(id) ON DELETE CASCADE,
+    status         TEXT    NOT NULL DEFAULT 'aguardando',
+    rastreio       TEXT,
+    transportadora TEXT,
+    observacao     TEXT,
+    atualizado_em  TEXT    NOT NULL DEFAULT (datetime('now','localtime'))
+  );
+`);
+
+// ─── MIDDLEWARE ───────────────────────────────────────────────────────────────
+app.use(cors());
+app.use(express.json());
+app.use('/uploads', express.static(UPLOADS_DIR));
+app.use(express.static(path.join(__dirname, 'public')));
+
+// ─── UPLOAD DE IMAGENS ────────────────────────────────────────────────────────
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => cb(null, UPLOADS_DIR),
+  filename: (req, file, cb) => {
+    const ext = path.extname(file.originalname).toLowerCase();
+    cb(null, `img_${Date.now()}_${Math.random().toString(36).slice(2)}${ext}`);
+  }
+});
+const upload = multer({
+  storage,
+  limits: { fileSize: 5 * 1024 * 1024 },
+  fileFilter: (req, file, cb) => {
+    const allowed = ['.jpg','.jpeg','.png','.webp','.gif'];
+    cb(null, allowed.includes(path.extname(file.originalname).toLowerCase()));
+  }
+});
+
+// ════════════════════════════════════════════════════════════════════════════
+//  PRODUTOS
+// ════════════════════════════════════════════════════════════════════════════
+app.get('/api/produtos', (req, res) => {
+  const { ativo, q } = req.query;
+  let sql = 'SELECT * FROM produtos WHERE 1=1';
+  const params = [];
+  if (ativo !== undefined) { sql += ' AND ativo=?'; params.push(Number(ativo)); }
+  if (q) { sql += ' AND (nome LIKE ? OR modelo LIKE ?)'; params.push(`%${q}%`,`%${q}%`); }
+  sql += ' ORDER BY nome';
+  res.json(db.prepare(sql).all(...params));
+});
+
+app.get('/api/produtos/:id', (req, res) => {
+  const p = db.prepare('SELECT * FROM produtos WHERE id=?').get(req.params.id);
+  p ? res.json(p) : res.status(404).json({ error: 'Não encontrado' });
+});
+
+app.post('/api/produtos', (req, res) => {
+  const { nome, modelo, descricao, preco, tamanhos, cores, ativo } = req.body;
+  if (!nome || !modelo || preco == null) return res.status(400).json({ error: 'nome, modelo e preco são obrigatórios' });
+  try {
+    const r = db.prepare(
+      'INSERT INTO produtos (nome,modelo,descricao,preco,tamanhos,cores,ativo) VALUES (?,?,?,?,?,?,?)'
+    ).run(nome, modelo, descricao||null, preco,
+          JSON.stringify(tamanhos||[]), JSON.stringify(cores||[]), ativo??1);
+    res.status(201).json(db.prepare('SELECT * FROM produtos WHERE id=?').get(r.lastInsertRowid));
+  } catch(e) {
+    res.status(409).json({ error: e.message });
+  }
+});
+
+app.put('/api/produtos/:id', (req, res) => {
+  const { nome, modelo, descricao, preco, tamanhos, cores, ativo } = req.body;
+  db.prepare(
+    'UPDATE produtos SET nome=?,modelo=?,descricao=?,preco=?,tamanhos=?,cores=?,ativo=? WHERE id=?'
+  ).run(nome, modelo, descricao||null, preco,
+        JSON.stringify(tamanhos||[]), JSON.stringify(cores||[]), ativo??1, req.params.id);
+  res.json(db.prepare('SELECT * FROM produtos WHERE id=?').get(req.params.id));
+});
+
+app.delete('/api/produtos/:id', (req, res) => {
+  // Remove imagens físicas
+  const p = db.prepare('SELECT imagens FROM produtos WHERE id=?').get(req.params.id);
+  if (p) {
+    (JSON.parse(p.imagens||'[]')).forEach(img => {
+      const fp = path.join(UPLOADS_DIR, path.basename(img));
+      if (fs.existsSync(fp)) fs.unlinkSync(fp);
+    });
+  }
+  db.prepare('DELETE FROM produtos WHERE id=?').run(req.params.id);
+  res.json({ ok: true });
+});
+
+// ─── IMAGENS ─────────────────────────────────────────────────────────────────
+app.post('/api/produtos/:id/imagens', upload.array('imagens', 8), (req, res) => {
+  const p = db.prepare('SELECT imagens FROM produtos WHERE id=?').get(req.params.id);
+  if (!p) return res.status(404).json({ error: 'Produto não encontrado' });
+  const existentes = JSON.parse(p.imagens || '[]');
+  const novas = req.files.map(f => `/uploads/${f.filename}`);
+  const todas = [...existentes, ...novas];
+  db.prepare('UPDATE produtos SET imagens=? WHERE id=?').run(JSON.stringify(todas), req.params.id);
+  res.json({ imagens: todas });
+});
+
+app.delete('/api/produtos/:id/imagens', (req, res) => {
+  const { url } = req.body;
+  const p = db.prepare('SELECT imagens FROM produtos WHERE id=?').get(req.params.id);
+  if (!p) return res.status(404).json({ error: 'Não encontrado' });
+  const lista = JSON.parse(p.imagens||'[]').filter(i => i !== url);
+  const fp = path.join(UPLOADS_DIR, path.basename(url));
+  if (fs.existsSync(fp)) fs.unlinkSync(fp);
+  db.prepare('UPDATE produtos SET imagens=? WHERE id=?').run(JSON.stringify(lista), req.params.id);
+  res.json({ imagens: lista });
+});
+
+// ════════════════════════════════════════════════════════════════════════════
+//  ESTOQUE
+// ════════════════════════════════════════════════════════════════════════════
+app.get('/api/estoque', (req, res) => {
+  const { produto_id } = req.query;
+  let sql = `SELECT e.*, p.nome as produto_nome FROM estoque e
+             LEFT JOIN produtos p ON e.produto_id=p.id WHERE 1=1`;
+  const params = [];
+  if (produto_id) { sql += ' AND e.produto_id=?'; params.push(produto_id); }
+  sql += ' ORDER BY p.nome, e.tamanho, e.cor';
+  res.json(db.prepare(sql).all(...params));
+});
+
+app.post('/api/estoque', (req, res) => {
+  const { produto_id, tamanho, cor, quantidade, operacao } = req.body;
+  if (!produto_id || !tamanho || !cor) return res.status(400).json({ error: 'produto_id, tamanho e cor obrigatórios' });
+  const existing = db.prepare('SELECT * FROM estoque WHERE produto_id=? AND tamanho=? AND cor=?').get(produto_id, tamanho, cor);
+  let novaQtd = Number(quantidade) || 0;
+  if (existing) {
+    if (operacao === 'add') novaQtd = existing.quantidade + novaQtd;
+    else if (operacao === 'sub') novaQtd = Math.max(0, existing.quantidade - novaQtd);
+    db.prepare("UPDATE estoque SET quantidade=?,atualizado_em=datetime('now','localtime') WHERE produto_id=? AND tamanho=? AND cor=?")
+      .run(novaQtd, produto_id, tamanho, cor);
+  } else {
+    db.prepare('INSERT INTO estoque (produto_id,tamanho,cor,quantidade) VALUES (?,?,?,?)').run(produto_id, tamanho, cor, novaQtd);
+  }
+  res.json(db.prepare('SELECT * FROM estoque WHERE produto_id=? AND tamanho=? AND cor=?').get(produto_id, tamanho, cor));
+});
+
+// Estoque por produto (para loja)
+app.get('/api/estoque/produto/:id', (req, res) => {
+  res.json(db.prepare('SELECT tamanho, cor, quantidade FROM estoque WHERE produto_id=? AND quantidade>0').all(req.params.id));
+});
+
+// ════════════════════════════════════════════════════════════════════════════
+//  VENDAS
+// ════════════════════════════════════════════════════════════════════════════
+app.get('/api/vendas', (req, res) => {
+  const { status, q } = req.query;
+  let sql = 'SELECT * FROM vendas WHERE 1=1';
+  const params = [];
+  if (status) { sql += ' AND status=?'; params.push(status); }
+  if (q) { sql += ' AND (cliente_nome LIKE ? OR cliente_tel LIKE ?)'; params.push(`%${q}%`,`%${q}%`); }
+  sql += ' ORDER BY id DESC';
+  res.json(db.prepare(sql).all(...params));
+});
+
+app.post('/api/vendas', (req, res) => {
+  const { cliente_nome, cliente_tel, cliente_end, produto_id, produto_nome, tamanho, cor, quantidade, preco_unit, total, pagamento, status, observacoes } = req.body;
+  if (!cliente_nome || !cliente_tel) return res.status(400).json({ error: 'Nome e telefone obrigatórios' });
+  const r = db.prepare(
+    'INSERT INTO vendas (cliente_nome,cliente_tel,cliente_end,produto_id,produto_nome,tamanho,cor,quantidade,preco_unit,total,pagamento,status,observacoes) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)'
+  ).run(cliente_nome, cliente_tel, cliente_end||null, produto_id||null, produto_nome||null, tamanho||null, cor||null, quantidade||1, preco_unit||null, total||null, pagamento||null, status||'pendente', observacoes||null);
+  const vid = r.lastInsertRowid;
+  db.prepare('INSERT OR IGNORE INTO envios (venda_id,status) VALUES (?,?)').run(vid, 'aguardando');
+  res.status(201).json(db.prepare('SELECT * FROM vendas WHERE id=?').get(vid));
+});
+
+app.put('/api/vendas/:id', (req, res) => {
+  const { cliente_nome, cliente_tel, cliente_end, produto_id, produto_nome, tamanho, cor, quantidade, preco_unit, total, pagamento, status, observacoes } = req.body;
+  db.prepare(
+    'UPDATE vendas SET cliente_nome=?,cliente_tel=?,cliente_end=?,produto_id=?,produto_nome=?,tamanho=?,cor=?,quantidade=?,preco_unit=?,total=?,pagamento=?,status=?,observacoes=? WHERE id=?'
+  ).run(cliente_nome, cliente_tel, cliente_end||null, produto_id||null, produto_nome||null, tamanho||null, cor||null, quantidade, preco_unit, total, pagamento, status, observacoes||null, req.params.id);
+  res.json(db.prepare('SELECT * FROM vendas WHERE id=?').get(req.params.id));
+});
+
+app.delete('/api/vendas/:id', (req, res) => {
+  db.prepare('DELETE FROM vendas WHERE id=?').run(req.params.id);
+  res.json({ ok: true });
+});
+
+// ════════════════════════════════════════════════════════════════════════════
+//  ENVIOS
+// ════════════════════════════════════════════════════════════════════════════
+app.get('/api/envios', (req, res) => {
+  const { status } = req.query;
+  let sql = `SELECT e.*, v.cliente_nome, v.cliente_tel, v.produto_nome,
+             v.tamanho, v.cor, v.cliente_end, v.total
+             FROM envios e LEFT JOIN vendas v ON e.venda_id=v.id WHERE 1=1`;
+  const params = [];
+  if (status) { sql += ' AND e.status=?'; params.push(status); }
+  sql += ' ORDER BY e.id DESC';
+  res.json(db.prepare(sql).all(...params));
+});
+
+app.put('/api/envios/:venda_id', (req, res) => {
+  const { status, rastreio, transportadora, observacao } = req.body;
+  db.prepare(`INSERT INTO envios (venda_id,status,rastreio,transportadora,observacao)
+              VALUES (?,?,?,?,?)
+              ON CONFLICT(venda_id) DO UPDATE SET
+              status=excluded.status, rastreio=excluded.rastreio,
+              transportadora=excluded.transportadora, observacao=excluded.observacao,
+              atualizado_em=datetime('now','localtime')`)
+    .run(req.params.venda_id, status, rastreio||null, transportadora||null, observacao||null);
+  res.json({ ok: true });
+});
+
+// ════════════════════════════════════════════════════════════════════════════
+//  DASHBOARD
+// ════════════════════════════════════════════════════════════════════════════
+app.get('/api/dashboard', (req, res) => {
+  res.json({
+    total_produtos:  db.prepare('SELECT COUNT(*) as c FROM produtos WHERE ativo=1').get().c,
+    total_vendas:    db.prepare('SELECT COUNT(*) as c FROM vendas').get().c,
+    faturamento:     db.prepare("SELECT COALESCE(SUM(total),0) as t FROM vendas WHERE status='pago'").get().t,
+    envios_pendentes:db.prepare("SELECT COUNT(*) as c FROM envios WHERE status NOT IN ('entregue')").get().c,
+    vendas_recentes: db.prepare(`SELECT v.*, e.status as env_status FROM vendas v
+                                 LEFT JOIN envios e ON v.id=e.venda_id
+                                 ORDER BY v.id DESC LIMIT 8`).all()
+  });
+});
+
+// ════════════════════════════════════════════════════════════════════════════
+//  BACKUP / EXPORT
+// ════════════════════════════════════════════════════════════════════════════
+app.get('/api/backup/db', (req, res) => {
+  const dest = path.join(DATA_DIR, `backup_${Date.now()}.db`);
+  db.backup(dest).then(() => {
+    res.download(dest, 'shoecrm.db', () => fs.unlinkSync(dest));
+  });
+});
+
+app.get('/api/backup/sql', (req, res) => {
+  const tables = ['produtos','estoque','vendas','envios'];
+  let sql = `-- ShoeCRM Backup SQL\n-- ${new Date().toLocaleString('pt-BR')}\n\n`;
+  tables.forEach(table => {
+    const rows = db.prepare(`SELECT * FROM ${table}`).all();
+    rows.forEach(row => {
+      const cols = Object.keys(row);
+      const vals = cols.map(c => row[c] == null ? 'NULL' : `'${String(row[c]).replace(/'/g,"''")}'`);
+      sql += `INSERT INTO ${table} (${cols.join(',')}) VALUES (${vals.join(',')});\n`;
+    });
+    if (rows.length) sql += '\n';
+  });
+  res.setHeader('Content-Type','text/plain');
+  res.setHeader('Content-Disposition','attachment; filename="shoecrm_backup.sql"');
+  res.send(sql);
+});
+
+app.get('/api/backup/xlsx', (req, res) => {
+  const wb = XLSX.utils.book_new();
+  const tables = {
+    'Produtos': 'SELECT p.*, (SELECT COALESCE(SUM(e.quantidade),0) FROM estoque e WHERE e.produto_id=p.id) as estoque_total FROM produtos p',
+    'Estoque':  'SELECT e.*, p.nome as produto_nome FROM estoque e LEFT JOIN produtos p ON e.produto_id=p.id',
+    'Vendas':   'SELECT * FROM vendas',
+    'Envios':   'SELECT en.*, v.cliente_nome, v.produto_nome FROM envios en LEFT JOIN vendas v ON en.venda_id=v.id'
+  };
+  Object.entries(tables).forEach(([name, sql]) => {
+    const rows = db.prepare(sql).all();
+    const ws = XLSX.utils.json_to_sheet(rows);
+    XLSX.utils.book_append_sheet(wb, ws, name);
+  });
+  const buf = XLSX.write(wb, { type: 'buffer', bookType: 'xlsx' });
+  res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+  res.setHeader('Content-Disposition', 'attachment; filename="shoecrm_export.xlsx"');
+  res.send(buf);
+});
+
+// ─── SEED (dados de exemplo na 1ª execução) ──────────────────────────────────
+const seedCheck = db.prepare("SELECT COUNT(*) as c FROM produtos").get();
+if (seedCheck.c === 0) {
+  const ins = db.prepare('INSERT INTO produtos (nome,modelo,descricao,preco,tamanhos,cores,ativo) VALUES (?,?,?,?,?,?,?)');
+  const insEst = db.prepare('INSERT OR IGNORE INTO estoque (produto_id,tamanho,cor,quantidade) VALUES (?,?,?,?)');
+  db.transaction(() => {
+    const p1 = ins.run('Scarpin Elegance','SCA-001','Scarpin clássico com salto fino 7cm',159.90,'["35","36","37","38","39","40"]','["Preto","Nude","Vermelho"]',1);
+    const p2 = ins.run('Sandália Boho','SAN-002','Sandália rasteira estilo boho',89.90,'["35","36","37","38","39","40","41"]','["Caramelo","Branco","Preto"]',1);
+    const p3 = ins.run('Tênis Comfort','TEN-003','Tênis casual confortável',129.90,'["36","37","38","39","40","41","42"]','["Branco","Rosa","Azul"]',1);
+    [[p1.lastInsertRowid,'37','Preto',5],[p1.lastInsertRowid,'38','Nude',3],[p1.lastInsertRowid,'37','Vermelho',2],
+     [p2.lastInsertRowid,'37','Caramelo',6],[p2.lastInsertRowid,'38','Branco',4],
+     [p3.lastInsertRowid,'38','Branco',8],[p3.lastInsertRowid,'39','Rosa',5]].forEach(a=>insEst.run(...a));
+  })();
+}
+
+app.listen(PORT, () => console.log(`✅ ShoeCRM rodando em http://localhost:${PORT}`));
