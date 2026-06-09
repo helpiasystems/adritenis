@@ -17,7 +17,7 @@ const BACKUP_DIR  = path.join(DATA_DIR, 'backups');
 
 // ─── BANCO ────────────────────────────────────────────────────────────────────
 const db = new Database(path.join(DATA_DIR, 'shoecrm.db'));
-app.use(express.static(path.join(__dirname, 'public')));
+
 db.pragma('journal_mode = WAL');
 db.pragma('foreign_keys = ON');
 
