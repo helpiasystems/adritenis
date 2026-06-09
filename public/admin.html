@@ -62,6 +62,11 @@ th{text-align:left;padding:10px 14px;font-size:11px;font-weight:700;color:var(--
 td{padding:10px 14px;border-bottom:1px solid var(--creme-m);font-size:13px;vertical-align:middle}
 tr:last-child td{border-bottom:none}
 tr:hover td{background:var(--creme)}
+/* célula de produto com thumbnail */
+.td-prod{white-space:nowrap}
+.td-prod-inner{display:inline-flex;align-items:center;gap:8px;vertical-align:middle}
+.td-thumb{width:36px;height:36px;flex-shrink:0;object-fit:cover;border-radius:6px;border:1px solid var(--borda-m);display:block}
+.td-thumb-placeholder{width:36px;height:36px;flex-shrink:0;background:var(--ouro-l);border-radius:6px;display:inline-flex;align-items:center;justify-content:center;font-size:18px}
 
 .badge{display:inline-block;padding:2px 8px;border-radius:12px;font-size:11px;font-weight:600}
 .bv{background:var(--verde-bg);color:var(--verde)}
@@ -642,11 +647,11 @@ function renderProdutos(prods) {
     const tams = JSON.parse(p.tamanhos||'[]');
     const imgs = JSON.parse(p.imagens||'[]');
     const thumb = imgs[0]
-      ? `<img src="${imgs[0]}" style="width:36px;height:36px;object-fit:cover;border-radius:6px;border:1px solid var(--borda-m)">`
-      : `<div style="width:36px;height:36px;background:var(--ouro-l);border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:18px">👠</div>`;
+      ? `<img class="td-thumb" src="${imgs[0]}" alt="${p.nome}">`
+      : `<span class="td-thumb-placeholder">👠</span>`;
     return `<tr>
       <td><code style="font-size:11px;background:var(--creme-m);padding:2px 6px;border-radius:4px">#${p.id}</code></td>
-      <td style="display:flex;align-items:center;gap:8px">${thumb}<strong>${p.nome}</strong></td>
+      <td class="td-prod"><div class="td-prod-inner">${thumb}<strong>${p.nome}</strong></div></td>
       <td style="font-family:monospace;font-size:12px">${p.modelo}</td>
       <td>${imgs.length ? `<span class="badge bc">${imgs.length} foto${imgs.length>1?'s':''}</span>` : '–'}</td>
       <td style="font-size:12px">${tams.slice(0,4).join(', ')}${tams.length>4?'…':''}</td>
