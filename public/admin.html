@@ -657,10 +657,10 @@ function renderProdutos(prods) {
       <td style="font-size:12px">${tams.slice(0,4).join(', ')}${tams.length>4?'…':''}</td>
       <td><strong>R$ ${Number(p.preco).toFixed(2)}</strong></td>
       <td>${p.ativo ? '<span class="badge bv">Ativo</span>' : '<span class="badge bc">Inativo</span>'}</td>
-      <td style="display:flex;gap:4px">
+      <td><div style="display:flex;gap:4px">
         <button class="btn btn-s btn-sm" onclick='editProd(${p.id})'>✏️</button>
         <button class="btn btn-d btn-sm" onclick='delProd(${p.id})'>🗑️</button>
-      </td>
+      </div></td>
     </tr>`;
   }).join('') || '<tr><td colspan="8" style="text-align:center;padding:24px;color:var(--texto-m)">Nenhum produto</td></tr>';
 }
