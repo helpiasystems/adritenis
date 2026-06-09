@@ -95,6 +95,7 @@ app.use('/admin.html', (req, res, next) => {
 app.use(cors());
 app.use(express.json());
 app.use('/uploads', express.static(UPLOADS_DIR));
+app.use('/assets', express.static(path.join(__dirname, 'assets')));
 app.use(express.static(path.join(__dirname, 'public')));
 
 // Redireciona raiz para a loja
