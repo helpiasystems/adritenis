@@ -11,7 +11,7 @@ const PORT = process.env.PORT || 3000;
 
 // ─── PASTAS ───────────────────────────────────────────────────────────────────
 const DATA_DIR    = path.join(__dirname, 'data');
-const UPLOADS_DIR = path.join(__dirname, 'uploads');
+const UPLOADS_DIR = path.join(DATA_DIR, 'uploads');
 const BACKUP_DIR  = path.join(DATA_DIR, 'backups');
 [DATA_DIR, UPLOADS_DIR, BACKUP_DIR].forEach(d => !fs.existsSync(d) && fs.mkdirSync(d, { recursive: true }));
 
