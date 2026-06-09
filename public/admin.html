@@ -27,7 +27,7 @@ body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--creme);color:v
   box-shadow:0 2px 8px rgba(139,105,20,.08)
 }
 .logo{display:flex;align-items:center;gap:10px}
-.logo img{height:32px;width:32px;object-fit:contain;border-radius:50%}
+.logo-img{height:36px;width:36px;object-fit:contain;border-radius:50%;border:2px solid var(--ouro-l)}
 .logo-txt{font-size:17px;font-weight:700;color:var(--ouro-dp)}
 .logo-txt span{color:var(--ouro-d)}
 #db-status{font-size:12px;color:var(--texto-m);display:flex;align-items:center;gap:6px}
@@ -82,7 +82,7 @@ tr:hover td{background:var(--creme)}
 
 .moverlay{display:none;position:fixed;inset:0;background:rgba(92,66,10,.4);z-index:999;align-items:center;justify-content:center}
 .moverlay.open{display:flex}
-.modal{background:var(--branco);border-radius:14px;padding:24px;width:540px;max-width:95vw;max-height:85vh;overflow-y:auto;box-shadow:0 8px 32px rgba(92,66,10,.18)}
+.modal{background:var(--branco);border-radius:14px;padding:24px;width:580px;max-width:95vw;max-height:90vh;overflow-y:auto;box-shadow:0 8px 32px rgba(92,66,10,.18)}
 .m-title{font-size:16px;font-weight:700;margin-bottom:16px;color:var(--ouro-dp)}
 .fg{display:grid;grid-template-columns:1fr 1fr;gap:12px}
 .fg.c3{grid-template-columns:1fr 1fr 1fr}
@@ -99,13 +99,60 @@ textarea{resize:vertical;min-height:70px}
 .chip-add{display:flex;gap:6px;margin-top:6px}
 .chip-add input{max-width:110px;padding:4px 8px}
 
-.img-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(80px,1fr));gap:8px;margin-top:8px}
-.img-item{position:relative;border-radius:8px;overflow:hidden;aspect-ratio:1;background:var(--creme-m)}
-.img-item img{width:100%;height:100%;object-fit:cover}
-.img-del{position:absolute;top:3px;right:3px;background:rgba(92,66,10,.7);color:#fff;border:none;border-radius:50%;width:20px;height:20px;cursor:pointer;font-size:11px;display:flex;align-items:center;justify-content:center}
-.img-add-area{border:2px dashed var(--borda-m);border-radius:8px;padding:16px;text-align:center;cursor:pointer;transition:.15s;font-size:12px;color:var(--texto-m)}
-.img-add-area:hover{border-color:var(--ouro-d);color:var(--ouro-d)}
+/* ── GALERIA DE IMAGENS (admin) ── */
+.img-section{border:1px solid var(--borda-m);border-radius:10px;overflow:hidden}
+.img-section-hdr{background:var(--creme);padding:10px 14px;font-size:12px;font-weight:700;color:var(--texto-m);border-bottom:1px solid var(--borda-m);display:flex;align-items:center;justify-content:space-between}
+.img-grid{
+  display:grid;
+  grid-template-columns:repeat(4,1fr);
+  gap:8px;
+  padding:12px;
+  background:var(--branco);
+}
+.img-item{
+  position:relative;
+  border-radius:8px;
+  overflow:hidden;
+  aspect-ratio:1/1;
+  background:var(--creme-m);
+  border:1px solid var(--borda-m);
+}
+.img-item img{
+  width:100%;height:100%;object-fit:cover;display:block;
+}
+.img-item .img-order{
+  position:absolute;top:4px;left:4px;
+  background:rgba(92,66,10,.75);color:#fff;
+  border-radius:4px;font-size:10px;font-weight:700;
+  padding:1px 5px;line-height:1.4;
+}
+.img-del{
+  position:absolute;top:4px;right:4px;
+  background:rgba(163,45,45,.85);color:#fff;
+  border:none;border-radius:50%;
+  width:22px;height:22px;
+  cursor:pointer;font-size:13px;
+  display:flex;align-items:center;justify-content:center;
+  line-height:1;
+  transition:.15s;
+}
+.img-del:hover{background:var(--verm)}
+.img-add-area{
+  border:2px dashed var(--borda-m);
+  border-radius:8px;
+  margin:0 12px 12px;
+  padding:14px;
+  text-align:center;
+  cursor:pointer;
+  transition:.15s;
+  font-size:12px;
+  color:var(--texto-m);
+  background:var(--creme);
+}
+.img-add-area:hover{border-color:var(--ouro-d);color:var(--ouro-d);background:var(--ouro-l)}
+.img-add-area span{display:block;font-size:20px;margin-bottom:4px}
 #img-file-input{display:none}
+.img-uploading{text-align:center;padding:8px;font-size:12px;color:var(--texto-m)}
 
 .alert{padding:10px 14px;border-radius:8px;font-size:13px;margin-bottom:14px}
 .a-ok{background:var(--verde-bg);color:var(--verde)}
@@ -137,8 +184,7 @@ th.sort-desc::after{content:' ▼';opacity:1;color:var(--ouro-d)}
 
 <header id="hdr">
   <div class="logo">
-    <!-- LOGO: substitua pelo caminho da sua imagem -->
-    <img src="/assets/logo.jpeg" alt="Adri.Moreira Tênis" onerror="this.style.display='none'">
+    <img class="logo-img" src="/assets/logo.jpeg" alt="Adri.Moreira" onerror="this.style.display='none'">
     <div class="logo-txt">Adri<span>Moreira</span> <span style="font-size:12px;font-weight:400;color:var(--texto-s)">Admin</span></div>
   </div>
   <div id="db-status"><div class="dot" id="dot"></div><span id="db-txt">Conectando...</span></div>
@@ -284,31 +330,29 @@ th.sort-desc::after{content:' ▼';opacity:1;color:var(--ouro-d)}
     <div class="pg-sub">Baixe o banco de dados em diferentes formatos</div>
     <div class="bk-card">
       <h3>📊 Exportar para Excel (.xlsx)</h3>
-      <p>Gera uma planilha com todas as abas: Produtos, Estoque, Vendas e Envios. Ideal para análise e compatível com Google Planilhas.</p>
+      <p>Gera uma planilha com todas as abas: Produtos, Estoque, Vendas e Envios.</p>
       <div class="bk-btns"><a href="/api/backup/xlsx" class="btn btn-p">⬇️ Baixar Excel</a></div>
     </div>
     <div class="bk-card">
       <h3>💾 Backup SQLite (.db)</h3>
-      <p>Arquivo binário do banco SQLite completo. Use para restaurar o banco no servidor ou abrir com DB Browser for SQLite.</p>
+      <p>Arquivo binário do banco SQLite completo.</p>
       <div class="bk-btns"><a href="/api/backup/db" class="btn btn-s">⬇️ Baixar .db</a></div>
     </div>
     <div class="bk-card">
       <h3>📄 Script SQL (.sql)</h3>
-      <p>Exporta todos os dados como comandos INSERT. Pode ser executado em qualquer banco SQLite ou compatível.</p>
+      <p>Exporta todos os dados como comandos INSERT.</p>
       <div class="bk-btns"><a href="/api/backup/sql" class="btn btn-s">⬇️ Baixar .sql</a></div>
     </div>
     <div class="bk-card" style="border-color:var(--ouro)">
       <h3>☁️ Como fazer backup no Google Drive</h3>
-      <p>1. Baixe o arquivo .xlsx ou .db acima<br>2. Acesse <strong>drive.google.com</strong><br>3. Faça upload do arquivo para a sua pasta de backups<br><br>
-      💡 <strong>Dica:</strong> Configure um lembrete semanal. No Render/Railway o arquivo .db fica salvo na pasta <code>data/</code> do servidor.</p>
+      <p>1. Baixe o arquivo .xlsx ou .db acima<br>2. Acesse <strong>drive.google.com</strong><br>3. Faça upload do arquivo para a sua pasta de backups</p>
     </div>
   </section>
 
 </main>
 </div>
 
-<!-- MODAIS -->
-
+<!-- ══ MODAL PRODUTO ══ -->
 <div class="moverlay" id="m-prod">
   <div class="modal">
     <div class="m-title" id="m-prod-title">Novo Produto</div>
@@ -322,9 +366,11 @@ th.sort-desc::after{content:' ▼';opacity:1;color:var(--ouro-d)}
       <div class="fgrp full">
         <label>Tamanhos</label>
         <div class="chips" id="c-tam">
-          <span class="chip" data-v="33">33</span><span class="chip" data-v="34">34</span><span class="chip" data-v="35">35</span>
-          <span class="chip" data-v="36">36</span><span class="chip" data-v="37">37</span><span class="chip" data-v="38">38</span>
-          <span class="chip" data-v="39">39</span><span class="chip" data-v="40">40</span><span class="chip" data-v="41">41</span><span class="chip" data-v="42">42</span>
+          <span class="chip" data-v="33">33</span><span class="chip" data-v="34">34</span>
+          <span class="chip" data-v="35">35</span><span class="chip" data-v="36">36</span>
+          <span class="chip" data-v="37">37</span><span class="chip" data-v="38">38</span>
+          <span class="chip" data-v="39">39</span><span class="chip" data-v="40">40</span>
+          <span class="chip" data-v="41">41</span><span class="chip" data-v="42">42</span>
         </div>
         <div class="chip-add"><input type="text" id="tam-novo" placeholder="Outro"><button class="btn btn-s btn-sm" onclick="addChip('tam-novo','c-tam')">+</button></div>
       </div>
@@ -339,14 +385,24 @@ th.sort-desc::after{content:' ▼';opacity:1;color:var(--ouro-d)}
         </div>
         <div class="chip-add"><input type="text" id="cor-nova" placeholder="Outra"><button class="btn btn-s btn-sm" onclick="addChip('cor-nova','c-cor')">+</button></div>
       </div>
+
+      <!-- ── GALERIA DE IMAGENS ── -->
       <div class="fgrp full" id="fg-imgs" style="display:none">
-        <label>Imagens do produto</label>
-        <div class="img-grid" id="img-preview"></div>
-        <div class="img-add-area" onclick="document.getElementById('img-file-input').click()">
-          📷 Clique para adicionar imagens (JPG, PNG, WEBP — máx 5MB cada)
+        <label style="margin-bottom:8px">Fotos do produto</label>
+        <div class="img-section">
+          <div class="img-section-hdr">
+            <span>Galeria</span>
+            <span id="img-count-lbl" style="font-size:11px;color:var(--texto-s)">0 foto(s)</span>
+          </div>
+          <div class="img-grid" id="img-preview"></div>
+          <div class="img-add-area" onclick="document.getElementById('img-file-input').click()">
+            <span>📷</span>
+            Clique para adicionar fotos (JPG, PNG, WEBP — máx 5MB cada)
+          </div>
+          <input type="file" id="img-file-input" multiple accept=".jpg,.jpeg,.png,.webp,.gif" onchange="uploadImagens()">
         </div>
-        <input type="file" id="img-file-input" multiple accept=".jpg,.jpeg,.png,.webp,.gif" onchange="uploadImagens()">
       </div>
+
       <div class="fgrp"><label>Ativo na loja?</label>
         <select id="p-ativo"><option value="1">Sim</option><option value="0">Não</option></select>
       </div>
@@ -358,6 +414,7 @@ th.sort-desc::after{content:' ▼';opacity:1;color:var(--ouro-d)}
   </div>
 </div>
 
+<!-- ══ MODAL ESTOQUE ══ -->
 <div class="moverlay" id="m-est">
   <div class="modal">
     <div class="m-title">Ajustar Estoque</div>
@@ -380,6 +437,7 @@ th.sort-desc::after{content:' ▼';opacity:1;color:var(--ouro-d)}
   </div>
 </div>
 
+<!-- ══ MODAL VENDA ══ -->
 <div class="moverlay" id="m-vend">
   <div class="modal">
     <div class="m-title" id="m-vend-title">Registrar Venda</div>
@@ -412,6 +470,7 @@ th.sort-desc::after{content:' ▼';opacity:1;color:var(--ouro-d)}
   </div>
 </div>
 
+<!-- ══ MODAL ENVIO ══ -->
 <div class="moverlay" id="m-env">
   <div class="modal">
     <div class="m-title">Atualizar Envio</div>
@@ -611,6 +670,7 @@ function abrirProd() {
   document.querySelectorAll('#c-tam .chip, #c-cor .chip').forEach(c=>c.classList.remove('sel'));
   document.getElementById('fg-imgs').style.display='none';
   document.getElementById('img-preview').innerHTML='';
+  document.getElementById('img-count-lbl').textContent='0 foto(s)';
   document.getElementById('m-prod-alert').innerHTML='';
   abrirModal('m-prod');
 }
@@ -635,10 +695,19 @@ async function editProd(id) {
 }
 
 function renderImgPreview(imgs, prodId) {
-  document.getElementById('img-preview').innerHTML = imgs.map(url=>`
+  const grid = document.getElementById('img-preview');
+  document.getElementById('img-count-lbl').textContent = `${imgs.length} foto(s)`;
+
+  if (!imgs.length) {
+    grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:16px;color:var(--texto-m);font-size:12px">Nenhuma foto adicionada ainda</div>';
+    return;
+  }
+
+  grid.innerHTML = imgs.map((url, i) => `
     <div class="img-item">
-      <img src="${url}" onerror="this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 1 1%22/>'">
-      <button class="img-del" onclick="delImg('${url}',${prodId})">×</button>
+      <img src="${url}" alt="Foto ${i+1}" onerror="this.parentElement.style.background='var(--creme-m)'">
+      <div class="img-order">${i === 0 ? '✩ Capa' : '#'+(i+1)}</div>
+      <button class="img-del" onclick="delImg('${url}',${prodId})" title="Remover foto">×</button>
     </div>`).join('');
 }
 
@@ -680,15 +749,26 @@ async function uploadImagens() {
   if (!id) { alert('Salve o produto primeiro para adicionar imagens.'); return; }
   const files = document.getElementById('img-file-input').files;
   if (!files.length) return;
+
+  // Show uploading state
+  const addArea = document.querySelector('.img-add-area');
+  const orig = addArea.innerHTML;
+  addArea.innerHTML = '<span>⏳</span> Enviando fotos...';
+  addArea.style.pointerEvents = 'none';
+
   const fd = new FormData();
   [...files].forEach(f => fd.append('imagens', f));
   const r = await fetch(`${API}/api/produtos/${id}/imagens`, {method:'POST', body:fd});
   const data = await r.json();
   renderImgPreview(data.imagens, id);
+
+  addArea.innerHTML = orig;
+  addArea.style.pointerEvents = '';
   document.getElementById('img-file-input').value='';
 }
 
 async function delImg(url, prodId) {
+  if (!confirm('Remover esta foto?')) return;
   await api(`/api/produtos/${prodId}/imagens`, {method:'DELETE', body:{url}});
   const p = await api(`/api/produtos/${prodId}`);
   renderImgPreview(JSON.parse(p.imagens||'[]'), prodId);
