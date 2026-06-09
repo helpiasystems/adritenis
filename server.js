@@ -1,19 +1,3 @@
-// Proteção simples para /admin.html
-const ADMIN_PASS = process.env.ADMIN_PASS || 'senha123';
-app.use('/admin.html', (req, res, next) => {
-  const auth = req.headers.authorization;
-  if (!auth) {
-    res.setHeader('WWW-Authenticate', 'Basic realm="Admin"');
-    return res.status(401).send('Autenticação necessária');
-  }
-  const [,b64] = auth.split(' ');
-  const [,pass] = Buffer.from(b64,'base64').toString().split(':');
-  if (pass !== ADMIN_PASS) {
-    res.setHeader('WWW-Authenticate', 'Basic realm="Admin"');
-    return res.status(401).send('Senha incorreta');
-  }
-  next();
-});
 const express = require('express');
 const Database = require('better-sqlite3');
 const multer = require('multer');
