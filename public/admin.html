@@ -3,13 +3,14 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Adritenis – Admin</title>
+<title>Adri Moreira – Admin</title>
 <style>
-/* ── VARIÁVEIS ── */
 :root {
-  --rosa:#D4537E; --rosa-l:#FBEAF0; --rosa-d:#72243E;
-  --cinza:#F1EFE8; --cinza-m:#B4B2A9; --cinza-d:#5F5E5A;
-  --preto:#2C2C2A; --branco:#fff; --borda:#D3D1C7;
+  --ouro:#D4AD6A; --ouro-l:#F5E9C8; --ouro-d:#8B6914; --ouro-dp:#5C420A;
+  --creme:#FAF6EE; --creme-m:#EDE5D0; --creme-d:#C9B88A;
+  --texto:#2C2410; --texto-m:#7A6535; --texto-s:#B0965A;
+  --borda:#D4AD6A44; --borda-m:#D4AD6A66;
+  --branco:#fff;
   --verde:#3B6D11; --verde-bg:#EAF3DE;
   --am:#854F0B; --am-bg:#FAEEDA;
   --verm:#A32D2D; --verm-bg:#FCEBEB;
@@ -17,136 +18,133 @@
   --r:10px;
 }
 *{box-sizing:border-box;margin:0;padding:0}
-body{font-family:'Segoe UI',system-ui,sans-serif;background:#FAF9F7;color:var(--preto);font-size:14px}
+body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--creme);color:var(--texto);font-size:14px}
 
-/* HEADER */
-#hdr{background:var(--branco);border-bottom:1px solid var(--borda);display:flex;align-items:center;justify-content:space-between;padding:0 24px;height:56px;position:sticky;top:0;z-index:100}
-.logo{font-size:18px;font-weight:700;color:var(--rosa-d)}
-.logo span{color:var(--rosa)}
-#db-status{font-size:12px;color:var(--cinza-d);display:flex;align-items:center;gap:6px}
-.dot{width:8px;height:8px;border-radius:50%;background:var(--cinza-m)}
+#hdr{
+  background:var(--branco);border-bottom:1px solid var(--borda-m);
+  display:flex;align-items:center;justify-content:space-between;
+  padding:0 24px;height:56px;position:sticky;top:0;z-index:100;
+  box-shadow:0 2px 8px rgba(139,105,20,.08)
+}
+.logo{display:flex;align-items:center;gap:10px}
+.logo img{height:32px;width:32px;object-fit:contain;border-radius:50%}
+.logo-txt{font-size:17px;font-weight:700;color:var(--ouro-dp)}
+.logo-txt span{color:var(--ouro-d)}
+#db-status{font-size:12px;color:var(--texto-m);display:flex;align-items:center;gap:6px}
+.dot{width:8px;height:8px;border-radius:50%;background:var(--creme-d)}
 .dot.ok{background:#3B6D11} .dot.err{background:var(--verm)}
 
-/* LAYOUT */
 #wrap{display:flex;min-height:calc(100vh - 56px)}
-#sidebar{width:210px;flex-shrink:0;background:var(--branco);border-right:1px solid var(--borda);padding:16px 0}
-.nav-item{display:flex;align-items:center;gap:10px;padding:10px 20px;cursor:pointer;font-size:13px;color:var(--cinza-d);transition:.1s;border-left:3px solid transparent}
+#sidebar{width:210px;flex-shrink:0;background:var(--branco);border-right:1px solid var(--borda-m);padding:16px 0}
+.nav-item{display:flex;align-items:center;gap:10px;padding:10px 20px;cursor:pointer;font-size:13px;color:var(--texto-m);transition:.1s;border-left:3px solid transparent}
 .nav-item svg{width:17px;height:17px;flex-shrink:0}
-.nav-item.active{color:var(--rosa-d);background:var(--rosa-l);border-left-color:var(--rosa);font-weight:600}
-.nav-item:hover:not(.active){background:var(--cinza)}
-.nav-sep{height:1px;background:var(--borda);margin:8px 16px}
-.nav-lbl{font-size:10px;font-weight:700;color:#B4B2A9;letter-spacing:1px;text-transform:uppercase;padding:8px 20px 4px}
+.nav-item.active{color:var(--ouro-dp);background:var(--ouro-l);border-left-color:var(--ouro-d);font-weight:600}
+.nav-item:hover:not(.active){background:var(--creme-m)}
+.nav-sep{height:1px;background:var(--borda-m);margin:8px 16px}
+.nav-lbl{font-size:10px;font-weight:700;color:var(--texto-s);letter-spacing:1px;text-transform:uppercase;padding:8px 20px 4px}
 #content{flex:1;padding:24px;overflow-y:auto}
 
-/* SEÇÕES */
 .sec{display:none} .sec.active{display:block}
-.pg-title{font-size:20px;font-weight:700;margin-bottom:4px}
-.pg-sub{font-size:13px;color:var(--cinza-d);margin-bottom:20px}
+.pg-title{font-size:20px;font-weight:700;margin-bottom:4px;color:var(--ouro-dp)}
+.pg-sub{font-size:13px;color:var(--texto-m);margin-bottom:20px}
 
-/* STATS */
 .stats{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:24px}
-.stat{background:var(--branco);border:1px solid var(--borda);border-radius:var(--r);padding:14px 16px}
-.stat-lbl{font-size:11px;color:var(--cinza-d);font-weight:600;text-transform:uppercase;letter-spacing:.5px}
-.stat-val{font-size:26px;font-weight:700;margin:4px 0 2px;color:var(--rosa-d)}
-.stat-hint{font-size:11px;color:var(--cinza-d)}
+.stat{background:var(--branco);border:1px solid var(--borda-m);border-radius:var(--r);padding:14px 16px}
+.stat-lbl{font-size:11px;color:var(--texto-m);font-weight:600;text-transform:uppercase;letter-spacing:.5px}
+.stat-val{font-size:26px;font-weight:700;margin:4px 0 2px;color:var(--ouro-dp)}
+.stat-hint{font-size:11px;color:var(--texto-s)}
 
-/* TABELAS */
-.tcard{background:var(--branco);border:1px solid var(--borda);border-radius:var(--r);overflow:hidden;margin-bottom:20px}
-.tcard-hdr{display:flex;align-items:center;justify-content:space-between;padding:14px 16px;border-bottom:1px solid var(--borda)}
-.tcard-title{font-weight:600;font-size:14px}
+.tcard{background:var(--branco);border:1px solid var(--borda-m);border-radius:var(--r);overflow:hidden;margin-bottom:20px}
+.tcard-hdr{display:flex;align-items:center;justify-content:space-between;padding:14px 16px;border-bottom:1px solid var(--borda-m)}
+.tcard-title{font-weight:600;font-size:14px;color:var(--ouro-dp)}
 table{width:100%;border-collapse:collapse}
-th{text-align:left;padding:10px 14px;font-size:11px;font-weight:700;color:var(--cinza-d);letter-spacing:.5px;text-transform:uppercase;background:#FAF9F7;border-bottom:1px solid var(--borda)}
-td{padding:10px 14px;border-bottom:1px solid #F1EFE8;font-size:13px;vertical-align:middle}
+th{text-align:left;padding:10px 14px;font-size:11px;font-weight:700;color:var(--texto-m);letter-spacing:.5px;text-transform:uppercase;background:var(--creme);border-bottom:1px solid var(--borda-m)}
+td{padding:10px 14px;border-bottom:1px solid var(--creme-m);font-size:13px;vertical-align:middle}
 tr:last-child td{border-bottom:none}
-tr:hover td{background:#FAF9F7}
+tr:hover td{background:var(--creme)}
 
-/* BADGES */
 .badge{display:inline-block;padding:2px 8px;border-radius:12px;font-size:11px;font-weight:600}
 .bv{background:var(--verde-bg);color:var(--verde)}
 .ba{background:var(--am-bg);color:var(--am)}
 .br{background:var(--verm-bg);color:var(--verm)}
 .baz{background:var(--azul-bg);color:var(--azul)}
-.bp{background:var(--rosa-l);color:var(--rosa-d)}
-.bc{background:var(--cinza);color:var(--cinza-d)}
+.bp{background:var(--ouro-l);color:var(--ouro-dp)}
+.bc{background:var(--creme-m);color:var(--texto-m)}
 
-/* BOTÕES */
 .btn{display:inline-flex;align-items:center;gap:6px;padding:8px 14px;border-radius:8px;border:none;cursor:pointer;font-size:13px;font-weight:500;transition:.15s}
-.btn-p{background:var(--rosa);color:#fff} .btn-p:hover{background:var(--rosa-d)}
-.btn-s{background:var(--branco);border:1px solid var(--borda);color:var(--preto)} .btn-s:hover{background:var(--cinza)}
+.btn-p{background:linear-gradient(135deg,var(--ouro-dp),var(--ouro-d));color:#fff}
+.btn-p:hover{background:linear-gradient(135deg,var(--ouro-d),var(--ouro))}
+.btn-s{background:var(--branco);border:1px solid var(--borda-m);color:var(--texto)}
+.btn-s:hover{background:var(--creme-m)}
 .btn-sm{padding:4px 10px;font-size:12px;border-radius:6px}
-.btn-d{background:var(--verm-bg);color:var(--verm);border:1px solid #F7C1C1} .btn-d:hover{background:#F7C1C1}
+.btn-d{background:var(--verm-bg);color:var(--verm);border:1px solid #F7C1C1}
+.btn-d:hover{background:#F7C1C1}
 
-/* MODAIS */
-.moverlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:999;align-items:center;justify-content:center}
+.moverlay{display:none;position:fixed;inset:0;background:rgba(92,66,10,.4);z-index:999;align-items:center;justify-content:center}
 .moverlay.open{display:flex}
-.modal{background:var(--branco);border-radius:14px;padding:24px;width:540px;max-width:95vw;max-height:85vh;overflow-y:auto;box-shadow:0 8px 32px rgba(0,0,0,.15)}
-.m-title{font-size:16px;font-weight:700;margin-bottom:16px}
+.modal{background:var(--branco);border-radius:14px;padding:24px;width:540px;max-width:95vw;max-height:85vh;overflow-y:auto;box-shadow:0 8px 32px rgba(92,66,10,.18)}
+.m-title{font-size:16px;font-weight:700;margin-bottom:16px;color:var(--ouro-dp)}
 .fg{display:grid;grid-template-columns:1fr 1fr;gap:12px}
 .fg.c3{grid-template-columns:1fr 1fr 1fr}
 .fgrp{display:flex;flex-direction:column;gap:4px}
 .fgrp.full{grid-column:1/-1}
-label{font-size:12px;font-weight:600;color:var(--cinza-d)}
-input,select,textarea{padding:8px 10px;border:1px solid var(--borda);border-radius:7px;font-size:13px;color:var(--preto);background:var(--branco);outline:none;transition:border .15s;width:100%}
-input:focus,select:focus,textarea:focus{border-color:var(--rosa)}
+label{font-size:12px;font-weight:600;color:var(--texto-m)}
+input,select,textarea{padding:8px 10px;border:1px solid var(--borda-m);border-radius:7px;font-size:13px;color:var(--texto);background:var(--branco);outline:none;transition:border .15s;width:100%}
+input:focus,select:focus,textarea:focus{border-color:var(--ouro-d)}
 textarea{resize:vertical;min-height:70px}
 
-/* CHIPS */
 .chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:4px}
-.chip{padding:4px 10px;border-radius:16px;font-size:12px;cursor:pointer;border:1px solid var(--borda);background:var(--branco);transition:.1s;user-select:none}
-.chip.sel{background:var(--rosa);color:#fff;border-color:var(--rosa)}
+.chip{padding:4px 10px;border-radius:16px;font-size:12px;cursor:pointer;border:1px solid var(--borda-m);background:var(--branco);transition:.1s;user-select:none}
+.chip.sel{background:linear-gradient(135deg,var(--ouro-dp),var(--ouro-d));color:#fff;border-color:transparent}
 .chip-add{display:flex;gap:6px;margin-top:6px}
 .chip-add input{max-width:110px;padding:4px 8px}
 
-/* IMAGENS */
 .img-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(80px,1fr));gap:8px;margin-top:8px}
-.img-item{position:relative;border-radius:8px;overflow:hidden;aspect-ratio:1;background:var(--cinza)}
+.img-item{position:relative;border-radius:8px;overflow:hidden;aspect-ratio:1;background:var(--creme-m)}
 .img-item img{width:100%;height:100%;object-fit:cover}
-.img-del{position:absolute;top:3px;right:3px;background:rgba(0,0,0,.6);color:#fff;border:none;border-radius:50%;width:20px;height:20px;cursor:pointer;font-size:11px;display:flex;align-items:center;justify-content:center}
-.img-add-area{border:2px dashed var(--borda);border-radius:8px;padding:16px;text-align:center;cursor:pointer;transition:.15s;font-size:12px;color:var(--cinza-d)}
-.img-add-area:hover{border-color:var(--rosa);color:var(--rosa)}
+.img-del{position:absolute;top:3px;right:3px;background:rgba(92,66,10,.7);color:#fff;border:none;border-radius:50%;width:20px;height:20px;cursor:pointer;font-size:11px;display:flex;align-items:center;justify-content:center}
+.img-add-area{border:2px dashed var(--borda-m);border-radius:8px;padding:16px;text-align:center;cursor:pointer;transition:.15s;font-size:12px;color:var(--texto-m)}
+.img-add-area:hover{border-color:var(--ouro-d);color:var(--ouro-d)}
 #img-file-input{display:none}
 
-/* ALERTAS */
 .alert{padding:10px 14px;border-radius:8px;font-size:13px;margin-bottom:14px}
 .a-ok{background:var(--verde-bg);color:var(--verde)}
 .a-err{background:var(--verm-bg);color:var(--verm)}
 
-/* BUSCA */
 .sbar{display:flex;gap:10px;align-items:center;margin-bottom:16px;flex-wrap:wrap}
 .sbar input{max-width:260px} .sbar select{max-width:180px}
 
-/* ENVIO STATUS */
 .env-steps{display:flex}
-.env-step{flex:1;padding:5px 6px;font-size:10px;font-weight:600;text-align:center;background:var(--cinza);color:var(--cinza-d);border-right:2px solid #fff}
+.env-step{flex:1;padding:5px 6px;font-size:10px;font-weight:600;text-align:center;background:var(--creme-m);color:var(--texto-m);border-right:2px solid var(--creme)}
 .env-step:first-child{border-radius:5px 0 0 5px}
 .env-step:last-child{border-radius:0 5px 5px 0;border-right:none}
 .env-step.done{background:var(--verde-bg);color:var(--verde)}
-.env-step.cur{background:var(--rosa);color:#fff}
+.env-step.cur{background:linear-gradient(135deg,var(--ouro-dp),var(--ouro-d));color:#fff}
 
-/* BACKUP */
-.bk-card{background:var(--branco);border:1px solid var(--borda);border-radius:var(--r);padding:20px;margin-bottom:16px}
-.bk-card h3{font-size:14px;font-weight:700;margin-bottom:8px}
-.bk-card p{font-size:13px;color:var(--cinza-d);margin-bottom:12px}
+.bk-card{background:var(--branco);border:1px solid var(--borda-m);border-radius:var(--r);padding:20px;margin-bottom:16px}
+.bk-card h3{font-size:14px;font-weight:700;margin-bottom:8px;color:var(--ouro-dp)}
+.bk-card p{font-size:13px;color:var(--texto-m);margin-bottom:12px}
 .bk-btns{display:flex;gap:10px;flex-wrap:wrap}
 
-/* ORDENAÇÃO */
 th.sortable{cursor:pointer;user-select:none;white-space:nowrap}
-th.sortable:hover{color:var(--rosa-d)}
+th.sortable:hover{color:var(--ouro-d)}
 th.sortable::after{content:' ⇅';opacity:.35;font-size:10px}
-th.sort-asc::after{content:' ▲';opacity:1;color:var(--rosa)}
-th.sort-desc::after{content:' ▼';opacity:1;color:var(--rosa)}
+th.sort-asc::after{content:' ▲';opacity:1;color:var(--ouro-d)}
+th.sort-desc::after{content:' ▼';opacity:1;color:var(--ouro-d)}
 </style>
 </head>
 <body>
 
-<!-- HEADER -->
 <header id="hdr">
-  <div class="logo">👠 Adri tenis<span>CRM</span> <span style="font-size:12px;font-weight:400;color:var(--cinza-d)">Admin</span></div>
+  <div class="logo">
+    <!-- LOGO: substitua pelo caminho da sua imagem -->
+    <img src="/assets/logo.png" alt="Adri Moreira" onerror="this.style.display='none'">
+    <div class="logo-txt">Adri<span>Moreira</span> <span style="font-size:12px;font-weight:400;color:var(--texto-s)">Admin</span></div>
+  </div>
   <div id="db-status"><div class="dot" id="dot"></div><span id="db-txt">Conectando...</span></div>
 </header>
 
 <div id="wrap">
-<!-- SIDEBAR -->
 <nav id="sidebar">
   <div class="nav-lbl">Principal</div>
   <div class="nav-item active" data-sec="dashboard" onclick="navTo(this)">
@@ -175,10 +173,8 @@ th.sort-desc::after{content:' ▼';opacity:1;color:var(--rosa)}
   </div>
 </nav>
 
-<!-- CONTEÚDO -->
 <main id="content">
 
-  <!-- DASHBOARD -->
   <section id="sec-dashboard" class="sec active">
     <div class="pg-title">Dashboard</div><div class="pg-sub">Visão geral da loja</div>
     <div class="stats">
@@ -194,7 +190,6 @@ th.sort-desc::after{content:' ▼';opacity:1;color:var(--rosa)}
     </div>
   </section>
 
-  <!-- PRODUTOS -->
   <section id="sec-produtos" class="sec">
     <div class="pg-title">Produtos</div><div class="pg-sub">Gerencie o catálogo da loja</div>
     <div class="sbar">
@@ -216,7 +211,6 @@ th.sort-desc::after{content:' ▼';opacity:1;color:var(--rosa)}
     </div>
   </section>
 
-  <!-- ESTOQUE -->
   <section id="sec-estoque" class="sec">
     <div class="pg-title">Estoque</div><div class="pg-sub">Controle de quantidade por variante</div>
     <div class="sbar">
@@ -236,7 +230,6 @@ th.sort-desc::after{content:' ▼';opacity:1;color:var(--rosa)}
     </div>
   </section>
 
-  <!-- VENDAS -->
   <section id="sec-vendas" class="sec">
     <div class="pg-title">Vendas</div><div class="pg-sub">Registre vendas realizadas via WhatsApp</div>
     <div class="sbar">
@@ -264,7 +257,6 @@ th.sort-desc::after{content:' ▼';opacity:1;color:var(--rosa)}
     </div>
   </section>
 
-  <!-- ENVIOS -->
   <section id="sec-envios" class="sec">
     <div class="pg-title">Envios</div><div class="pg-sub">Controle de entrega por pedido</div>
     <div class="sbar">
@@ -287,7 +279,6 @@ th.sort-desc::after{content:' ▼';opacity:1;color:var(--rosa)}
     </div>
   </section>
 
-  <!-- BACKUP -->
   <section id="sec-backup" class="sec">
     <div class="pg-title">Backup & Exportação</div>
     <div class="pg-sub">Baixe o banco de dados em diferentes formatos</div>
@@ -306,19 +297,18 @@ th.sort-desc::after{content:' ▼';opacity:1;color:var(--rosa)}
       <p>Exporta todos os dados como comandos INSERT. Pode ser executado em qualquer banco SQLite ou compatível.</p>
       <div class="bk-btns"><a href="/api/backup/sql" class="btn btn-s">⬇️ Baixar .sql</a></div>
     </div>
-    <div class="bk-card" style="border-color:#C0DD97">
+    <div class="bk-card" style="border-color:var(--ouro)">
       <h3>☁️ Como fazer backup no Google Drive</h3>
       <p>1. Baixe o arquivo .xlsx ou .db acima<br>2. Acesse <strong>drive.google.com</strong><br>3. Faça upload do arquivo para a sua pasta de backups<br><br>
-      💡 <strong>Dica:</strong> Configure um lembrete semanal para fazer este processo. No Render/Railway o arquivo .db fica salvo na pasta <code>data/</code> do servidor.</p>
+      💡 <strong>Dica:</strong> Configure um lembrete semanal. No Render/Railway o arquivo .db fica salvo na pasta <code>data/</code> do servidor.</p>
     </div>
   </section>
 
 </main>
 </div>
 
-<!-- ─── MODAIS ─── -->
+<!-- MODAIS -->
 
-<!-- Produto -->
 <div class="moverlay" id="m-prod">
   <div class="modal">
     <div class="m-title" id="m-prod-title">Novo Produto</div>
@@ -368,7 +358,6 @@ th.sort-desc::after{content:' ▼';opacity:1;color:var(--rosa)}
   </div>
 </div>
 
-<!-- Estoque -->
 <div class="moverlay" id="m-est">
   <div class="modal">
     <div class="m-title">Ajustar Estoque</div>
@@ -391,7 +380,6 @@ th.sort-desc::after{content:' ▼';opacity:1;color:var(--rosa)}
   </div>
 </div>
 
-<!-- Venda -->
 <div class="moverlay" id="m-vend">
   <div class="modal">
     <div class="m-title" id="m-vend-title">Registrar Venda</div>
@@ -408,7 +396,7 @@ th.sort-desc::after{content:' ▼';opacity:1;color:var(--rosa)}
       <div class="fgrp"><label>Cor</label><select id="v-cor"><option value="">–</option></select></div>
       <div class="fgrp"><label>Quantidade</label><input type="number" id="v-qtd" value="1" min="1" oninput="calcTot()"></div>
       <div class="fgrp"><label>Preço unit. (R$)</label><input type="number" id="v-preco" step="0.01" oninput="calcTot()"></div>
-      <div class="fgrp"><label>Total</label><input id="v-total" readonly style="background:#FAF9F7;font-weight:700"></div>
+      <div class="fgrp"><label>Total</label><input id="v-total" readonly style="background:var(--creme);font-weight:700"></div>
       <div class="fgrp"><label>Pagamento</label>
         <select id="v-pag"><option>PIX</option><option>Cartão crédito</option><option>Cartão débito</option><option>Dinheiro</option><option>Boleto</option></select>
       </div>
@@ -424,7 +412,6 @@ th.sort-desc::after{content:' ▼';opacity:1;color:var(--rosa)}
   </div>
 </div>
 
-<!-- Envio -->
 <div class="moverlay" id="m-env">
   <div class="modal">
     <div class="m-title">Atualizar Envio</div>
@@ -450,10 +437,8 @@ th.sort-desc::after{content:' ▼';opacity:1;color:var(--rosa)}
 </div>
 
 <script>
-// ── CONFIG ──────────────────────────────────────────────────────────────────
-const API = window.location.origin; // usa a mesma origem do servidor
+const API = window.location.origin;
 
-// ── HELPERS ─────────────────────────────────────────────────────────────────
 async function api(path, opts={}) {
   const r = await fetch(API + path, {
     headers: {'Content-Type':'application/json'},
@@ -469,7 +454,6 @@ function setStatus(ok, txt) {
   document.getElementById('db-txt').textContent = txt;
 }
 
-// ── NAVEGAÇÃO ────────────────────────────────────────────────────────────────
 const loaders = { dashboard:loadDash, produtos:loadProdutos, estoque:loadEstoque, vendas:loadVendas, envios:loadEnvios };
 function navTo(el) {
   document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
@@ -480,11 +464,9 @@ function navTo(el) {
   if (loaders[sec]) loaders[sec]();
 }
 
-// ── MODAIS ───────────────────────────────────────────────────────────────────
 function abrirModal(id) { document.getElementById(id).classList.add('open'); }
 function fecharModal(id) { document.getElementById(id).classList.remove('open'); }
 
-// ── CHIPS ────────────────────────────────────────────────────────────────────
 document.querySelectorAll('.chip').forEach(c => c.onclick = () => c.classList.toggle('sel'));
 function addChip(inputId, containerId) {
   const v = document.getElementById(inputId).value.trim(); if (!v) return;
@@ -502,7 +484,6 @@ function setChips(id, vals) {
   document.querySelectorAll(`#${id} .chip`).forEach(c => c.classList.toggle('sel', (vals||[]).includes(c.dataset.v)));
 }
 
-// ── SELECTS DE VARIANTES ─────────────────────────────────────────────────────
 let todosProds = [];
 function preencherSelects() {
   const opts = '<option value="">Selecione...</option>' + todosProds.map(p=>`<option value="${p.id}">${p.nome} (${p.modelo})</option>`).join('');
@@ -536,7 +517,6 @@ function calcTot() {
   document.getElementById('v-total').value='R$ '+(q*p).toFixed(2);
 }
 
-// ── DASHBOARD ────────────────────────────────────────────────────────────────
 async function loadDash() {
   try {
     const d = await api('/api/dashboard');
@@ -551,16 +531,13 @@ async function loadDash() {
           <td>${v.produto_nome||'–'}</td>
           <td><strong>R$ ${Number(v.total||0).toFixed(2)}</strong></td>
           <td><span class="badge ${eMap[v.env_status]||'bc'}">${v.env_status||'–'}</span></td>
-          <td style="font-size:11px;color:var(--cinza-d)">${(v.criado_em||'').substring(0,10)}</td>
+          <td style="font-size:11px;color:var(--texto-m)">${(v.criado_em||'').substring(0,10)}</td>
         </tr>`).join('')
-      : '<tr><td colspan="5" style="text-align:center;padding:24px;color:var(--cinza-d)">Sem vendas ainda</td></tr>';
+      : '<tr><td colspan="5" style="text-align:center;padding:24px;color:var(--texto-m)">Sem vendas ainda</td></tr>';
   } catch(e) { setStatus(false,'Erro API'); }
 }
 
-// ── ENGINE DE ORDENAÇÃO ───────────────────────────────────────────────────────
-// cache dos dados brutos por tabela
 const _cache = { prods:[], est:[], vend:[], env:[] };
-// estado de sort por tabela: { col, dir }
 const _sort  = { prods:{col:'id',dir:'asc'}, est:{col:'produto_nome',dir:'asc'},
                  vend:{col:'id',dir:'desc'}, env:{col:'venda_id',dir:'desc'} };
 
@@ -568,7 +545,6 @@ function sortTable(tbl, col, th) {
   const s = _sort[tbl];
   if (s.col === col) s.dir = s.dir === 'asc' ? 'desc' : 'asc';
   else { s.col = col; s.dir = 'asc'; }
-  // limpa classes do thead desta tabela
   th.closest('thead').querySelectorAll('th').forEach(t => t.classList.remove('sort-asc','sort-desc'));
   th.classList.add(s.dir === 'asc' ? 'sort-asc' : 'sort-desc');
   renderTable(tbl);
@@ -592,7 +568,6 @@ function renderTable(tbl) {
   if (tbl === 'env')   renderEnvios(rows);
 }
 
-// ── PRODUTOS ─────────────────────────────────────────────────────────────────
 async function loadProdutos() {
   const q = document.getElementById('s-prod').value;
   const prods = await api('/api/produtos'+(q?`?q=${encodeURIComponent(q)}`:''));
@@ -607,9 +582,11 @@ function renderProdutos(prods) {
   tb.innerHTML = prods.map(p => {
     const tams = JSON.parse(p.tamanhos||'[]');
     const imgs = JSON.parse(p.imagens||'[]');
-    const thumb = imgs[0] ? `<img src="${imgs[0]}" style="width:36px;height:36px;object-fit:cover;border-radius:6px;border:1px solid var(--borda)">` : `<div style="width:36px;height:36px;background:var(--rosa-l);border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:18px">👠</div>`;
+    const thumb = imgs[0]
+      ? `<img src="${imgs[0]}" style="width:36px;height:36px;object-fit:cover;border-radius:6px;border:1px solid var(--borda-m)">`
+      : `<div style="width:36px;height:36px;background:var(--ouro-l);border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:18px">👠</div>`;
     return `<tr>
-      <td><code style="font-size:11px;background:var(--cinza);padding:2px 6px;border-radius:4px">#${p.id}</code></td>
+      <td><code style="font-size:11px;background:var(--creme-m);padding:2px 6px;border-radius:4px">#${p.id}</code></td>
       <td style="display:flex;align-items:center;gap:8px">${thumb}<strong>${p.nome}</strong></td>
       <td style="font-family:monospace;font-size:12px">${p.modelo}</td>
       <td>${imgs.length ? `<span class="badge bc">${imgs.length} foto${imgs.length>1?'s':''}</span>` : '–'}</td>
@@ -621,7 +598,7 @@ function renderProdutos(prods) {
         <button class="btn btn-d btn-sm" onclick='delProd(${p.id})'>🗑️</button>
       </td>
     </tr>`;
-  }).join('') || '<tr><td colspan="8" style="text-align:center;padding:24px;color:var(--cinza-d)">Nenhum produto</td></tr>';
+  }).join('') || '<tr><td colspan="8" style="text-align:center;padding:24px;color:var(--texto-m)">Nenhum produto</td></tr>';
 }
 
 let editingProdId = null;
@@ -717,7 +694,6 @@ async function delImg(url, prodId) {
   renderImgPreview(JSON.parse(p.imagens||'[]'), prodId);
 }
 
-// ── ESTOQUE ──────────────────────────────────────────────────────────────────
 async function loadEstoque() {
   const pid = document.getElementById('s-est-prod').value;
   const rows = await api('/api/estoque'+(pid?`?produto_id=${pid}`:''));
@@ -737,7 +713,7 @@ function renderEstoque(rows) {
       <td><span class="badge ${cls}">${lbl}</span></td>
       <td><button class="btn btn-s btn-sm" onclick="editEst(${r.produto_id},'${r.tamanho}','${r.cor}',${r.quantidade})">✏️</button></td>
     </tr>`;
-  }).join('') || '<tr><td colspan="6" style="text-align:center;padding:24px;color:var(--cinza-d)">Nenhum registro</td></tr>';
+  }).join('') || '<tr><td colspan="6" style="text-align:center;padding:24px;color:var(--texto-m)">Nenhum registro</td></tr>';
 }
 
 function abrirEstoque() { document.getElementById('m-est-alert').innerHTML=''; abrirModal('m-est'); }
@@ -760,7 +736,6 @@ async function salvarEst() {
   fecharModal('m-est'); loadEstoque();
 }
 
-// ── VENDAS ───────────────────────────────────────────────────────────────────
 async function loadVendas() {
   const q = document.getElementById('s-vend').value;
   const st = document.getElementById('s-vend-st').value;
@@ -774,19 +749,19 @@ async function loadVendas() {
 function renderVendas(rows) {
   const stMap = {pendente:'ba',pago:'bv',cancelado:'br'};
   document.getElementById('tb-vend').innerHTML = rows.map(v=>`<tr>
-    <td><code style="font-size:11px;background:var(--cinza);padding:2px 5px;border-radius:4px">#${v.id}</code></td>
-    <td><strong>${v.cliente_nome}</strong><br><span style="font-size:11px;color:var(--cinza-d)">${v.cliente_tel}</span></td>
+    <td><code style="font-size:11px;background:var(--creme-m);padding:2px 5px;border-radius:4px">#${v.id}</code></td>
+    <td><strong>${v.cliente_nome}</strong><br><span style="font-size:11px;color:var(--texto-m)">${v.cliente_tel}</span></td>
     <td>${v.produto_nome||'–'}</td><td>${v.tamanho||'–'}</td><td>${v.cor||'–'}</td>
     <td><strong>R$ ${Number(v.total||0).toFixed(2)}</strong></td>
     <td style="font-size:12px">${v.pagamento||'–'}</td>
     <td><span class="badge ${stMap[v.status]||'bc'}">${v.status}</span></td>
-    <td style="font-size:11px;color:var(--cinza-d)">${(v.criado_em||'').substring(0,10)}</td>
+    <td style="font-size:11px;color:var(--texto-m)">${(v.criado_em||'').substring(0,10)}</td>
     <td style="display:flex;gap:4px">
       <button class="btn btn-s btn-sm" onclick="editVenda(${v.id})">✏️</button>
       <button class="btn btn-d btn-sm" onclick="delVenda(${v.id})">🗑️</button>
       <button class="btn btn-s btn-sm" onclick="abrirEnv(${v.id})" title="Envio">📦</button>
     </td>
-  </tr>`).join('') || '<tr><td colspan="10" style="text-align:center;padding:24px;color:var(--cinza-d)">Nenhuma venda</td></tr>';
+  </tr>`).join('') || '<tr><td colspan="10" style="text-align:center;padding:24px;color:var(--texto-m)">Nenhuma venda</td></tr>';
 }
 
 function abrirVenda() {
@@ -797,7 +772,6 @@ function abrirVenda() {
   document.getElementById('m-vend-alert').innerHTML=''; abrirModal('m-vend');
 }
 async function editVenda(id) {
-  const v = await api(`/api/vendas?q=`); // workaround – fetch all and find
   const vendas = await api('/api/vendas');
   const venda = vendas.find(x=>x.id===id); if (!venda) return;
   document.getElementById('v-id').value=venda.id;
@@ -846,7 +820,6 @@ async function delVenda(id) {
   await api(`/api/vendas/${id}`, {method:'DELETE'}); loadVendas(); loadDash();
 }
 
-// ── ENVIOS ───────────────────────────────────────────────────────────────────
 const ENV_STEPS = ['aguardando','preparando','enviado','entregue'];
 const ENV_LBL = {aguardando:'Aguardando',preparando:'Preparando',enviado:'Enviado',entregue:'Entregue'};
 async function loadEnvios() {
@@ -856,14 +829,14 @@ async function loadEnvios() {
     const ci = ENV_STEPS.indexOf(e.status);
     const steps = ENV_STEPS.map((s,i)=>`<div class="env-step ${i<ci?'done':i===ci?'cur':''}">${ENV_LBL[s]}</div>`).join('');
     return `<tr>
-      <td><code style="font-size:11px;background:var(--cinza);padding:2px 5px;border-radius:4px">#${e.venda_id}</code></td>
-      <td><strong>${e.cliente_nome||'–'}</strong><br><span style="font-size:11px;color:var(--cinza-d)">${e.cliente_tel||''}</span></td>
+      <td><code style="font-size:11px;background:var(--creme-m);padding:2px 5px;border-radius:4px">#${e.venda_id}</code></td>
+      <td><strong>${e.cliente_nome||'–'}</strong><br><span style="font-size:11px;color:var(--texto-m)">${e.cliente_tel||''}</span></td>
       <td>${e.produto_nome||'–'}${e.tamanho?` <span class="badge bc">${e.tamanho}</span>`:''}</td>
-      <td style="font-size:12px">${e.rastreio||'–'}<br><span style="font-size:11px;color:var(--cinza-d)">${e.transportadora||''}</span></td>
+      <td style="font-size:12px">${e.rastreio||'–'}<br><span style="font-size:11px;color:var(--texto-m)">${e.transportadora||''}</span></td>
       <td><div class="env-steps">${steps}</div></td>
       <td><button class="btn btn-s btn-sm" onclick="abrirEnv(${e.venda_id})">✏️</button></td>
     </tr>`;
-  }).join('') || '<tr><td colspan="6" style="text-align:center;padding:24px;color:var(--cinza-d)">Nenhum envio</td></tr>';
+  }).join('') || '<tr><td colspan="6" style="text-align:center;padding:24px;color:var(--texto-m)">Nenhum envio</td></tr>';
 }
 async function abrirEnv(vid) {
   document.getElementById('env-vid').value=vid;
@@ -886,7 +859,6 @@ async function salvarEnv() {
   fecharModal('m-env'); loadEnvios();
 }
 
-// ── INIT ─────────────────────────────────────────────────────────────────────
 (async () => {
   try {
     await api('/api/dashboard');
